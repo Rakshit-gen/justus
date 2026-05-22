@@ -56,14 +56,19 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function AttachmentRender({ att, isMine }) {
+function AttachmentRender({ att, isMine, onImageClick }) {
   if (att.mimeType?.startsWith('image/')) {
     const ratio = att.width && att.height ? att.width / att.height : null;
     return (
-      <a href={att.url} target="_blank" rel="noopener noreferrer" title={att.name} className="block overflow-hidden rounded-xl">
+      <button
+        type="button"
+        onClick={() => onImageClick?.(att)}
+        title={att.name}
+        className="block overflow-hidden rounded-xl transition active:scale-[0.99]"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={att.url} alt={att.name || 'image'} loading="lazy" className="max-h-72 w-auto max-w-full object-cover" style={ratio ? { aspectRatio: ratio } : undefined} />
-      </a>
+      </button>
     );
   }
   return (
@@ -162,6 +167,7 @@ export function MessageBubble({
   onToggleReaction,
   onDoubleTap,
   onQuoteClick,
+  onImageClick,
   bubbleRef,
   highlight,
 }) {
@@ -244,7 +250,7 @@ export function MessageBubble({
               {message.attachments?.length > 0 && (
                 <div className={clsx('mb-1 space-y-1.5', !message.content && '-mx-0.5 -mt-0.5')}>
                   {message.attachments.map((att, i) => (
-                    <AttachmentRender key={i} att={att} isMine={isMine} />
+                    <AttachmentRender key={i} att={att} isMine={isMine} onImageClick={onImageClick} />
                   ))}
                 </div>
               )}

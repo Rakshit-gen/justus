@@ -83,11 +83,18 @@ export function MessageInput({
   }
 
   function handleKeyDown(e) {
+    if (e.key === 'Escape' && editing) onCancelEdit?.();
     if (e.key === 'Enter' && !e.shiftKey) {
+      // On touch-primary devices (phones, most tablets) the keyboard has no
+      // Shift, so Enter-to-send leaves no way to type multiple lines. Let
+      // Enter insert a newline natively; users send via the send button.
+      const isCoarse =
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(pointer: coarse)').matches;
+      if (isCoarse) return;
       e.preventDefault();
       submit();
     }
-    if (e.key === 'Escape' && editing) onCancelEdit?.();
   }
 
   function submit() {
@@ -174,7 +181,7 @@ export function MessageInput({
         </div>
       )}
 
-      <div className="relative px-3 py-3">
+      <div className="relative px-2 py-3 sm:px-3">
         {showEmoji && (
           <div className="absolute bottom-full left-2 right-2 z-30 mb-2 sm:right-auto sm:w-80">
             <EmojiPicker onSelect={insertEmoji} />
@@ -185,7 +192,7 @@ export function MessageInput({
             </div>
           </div>
         )}
-        <div className="flex items-end gap-1.5">
+        <div className="flex items-end gap-1 min-w-0 sm:gap-1.5">
           {!editing && (
             <>
               <IconButton
@@ -232,7 +239,7 @@ export function MessageInput({
             rows={1}
             placeholder={disabled ? 'Reconnecting…' : editing ? 'Edit your message…' : 'Type a message…'}
             disabled={disabled}
-            className="min-w-0 flex-1 resize-none rounded-2xl border border-ink-200 bg-ink-50 px-4 py-2.5 text-sm leading-relaxed text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:placeholder:text-ink-500 dark:focus:border-brand-400 dark:focus:bg-ink-850 dark:focus:ring-brand-400/20"
+            className="min-w-0 w-0 flex-1 resize-none rounded-2xl border border-ink-200 bg-ink-50 px-3 py-2 text-sm leading-relaxed text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60 sm:px-4 sm:py-2.5 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:placeholder:text-ink-500 dark:focus:border-brand-400 dark:focus:bg-ink-850 dark:focus:ring-brand-400/20"
           />
           {canSchedule && (
             <IconButton
@@ -249,7 +256,7 @@ export function MessageInput({
           <button
             onClick={submit}
             disabled={!(value.trim() || (attachments?.length || 0) > 0) || disabled || uploading}
-            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-600/30 transition active:scale-95 hover:shadow-lg hover:shadow-brand-600/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-brand-glow transition active:scale-95 hover:shadow-soft-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:h-10 sm:w-10"
             aria-label={editing ? 'Save' : 'Send'}
           >
             {editing ? (
@@ -285,7 +292,7 @@ function IconButton({ icon, onClick, ariaLabel, active }) {
       onClick={onClick}
       aria-label={ariaLabel}
       className={clsx(
-        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-500 transition hover:bg-ink-100 hover:text-ink-800 active:scale-90 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100',
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-500 transition hover:bg-ink-100 hover:text-ink-800 active:scale-90 sm:h-10 sm:w-10 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100',
         active && 'bg-ink-100 text-brand-600 dark:bg-ink-800 dark:text-brand-300'
       )}
     >

@@ -308,6 +308,10 @@ export default function ChatPage() {
             onBack={() => setActiveOther(null)}
             onConvoUpdate={handleConvoUpdate}
             onChatSettingUpdate={handleChatSettingUpdate}
+            onUnfriended={(id) => {
+              setFriends((prev) => prev.filter((u) => u.id !== id));
+              setActiveOther(null);
+            }}
           />
         ) : (
           <EmptyChatState onAdd={() => setAddFriendOpen(true)} hasFriends={friends.length > 0} />

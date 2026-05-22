@@ -10,6 +10,8 @@ import { ScheduleSendModal, ScheduledList } from './ScheduleSendModal';
 import { SearchMessagesModal } from './SearchMessagesModal';
 import { MediaGalleryModal } from './MediaGalleryModal';
 import { WallpaperModal, wallpaperStyle } from './WallpaperModal';
+import { FriendProfileModal } from './FriendProfileModal';
+import { ImageLightbox } from './ImageLightbox';
 import { Modal } from './Modal';
 import { ConfettiBurst, isCelebration } from './Confetti';
 import { api } from '@/lib/apiClient';
@@ -25,7 +27,7 @@ import { formatDayDivider, formatLastSeen, sameDay } from '@/utils/date';
 const NEAR_BOTTOM_PX = 120;
 const TOP_FETCH_THRESHOLD_PX = 80;
 
-export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack, onConvoUpdate, onChatSettingUpdate }) {
+export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack, onConvoUpdate, onChatSettingUpdate, onUnfriended }) {
   const { socket, connected } = useSocket();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,8 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   const [searchOpen, setSearchOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [wallpaperOpen, setWallpaperOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0); // increment to trigger
   const [highlightId, setHighlightId] = useState(null);
@@ -527,13 +531,20 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
             </svg>
           </button>
         )}
-        <UserAvatar name={otherUser.name} color={otherUser.avatarColor} avatarUrl={otherUser.avatarUrl} size={40} online={otherPresence.isOnline} showDot />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-ink-900 dark:text-ink-50">{otherUser.name}</div>
-          <div className={`text-xs transition-colors ${otherTyping ? 'text-brand-600 dark:text-brand-400' : otherPresence.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-400 dark:text-ink-500'}`}>
-            {presenceLabel}
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 -m-1 text-left transition active:scale-[0.98] hover:bg-ink-50 dark:hover:bg-ink-800"
+          aria-label="View profile"
+        >
+          <UserAvatar name={otherUser.name} color={otherUser.avatarColor} avatarUrl={otherUser.avatarUrl} size={40} online={otherPresence.isOnline} showDot />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-ink-900 dark:text-ink-50">{otherUser.name}</div>
+            <div className={`text-xs transition-colors ${otherTyping ? 'text-brand-600 dark:text-brand-400' : otherPresence.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-400 dark:text-ink-500'}`}>
+              {presenceLabel}
+            </div>
           </div>
-        </div>
+        </button>
         {!connected && socket && (
           <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/30">
             reconnecting…
@@ -614,6 +625,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
                       onToggleReaction={(emoji) => toggleReaction(item.message, emoji)}
                       onDoubleTap={(m, pos) => handleDoubleTap(m, pos)}
                       onQuoteClick={(id) => scrollToMessage(id)}
+                      onImageClick={(att) => setLightboxImage(att)}
                     />
                   </div>
                 ))}
@@ -750,6 +762,18 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         otherUser={otherUser}
         current={chatSetting}
         onSaved={(setting) => onChatSettingUpdate?.(setting)}
+      />
+      <FriendProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        user={{ ...otherUser, isOnline: otherPresence.isOnline, lastSeen: otherPresence.lastSeen }}
+        onUnfriended={(id) => onUnfriended?.(id)}
+      />
+      <ImageLightbox
+        open={Boolean(lightboxImage)}
+        src={lightboxImage?.url}
+        name={lightboxImage?.name}
+        onClose={() => setLightboxImage(null)}
       />
 
       {confettiKey > 0 && (
