@@ -446,24 +446,29 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     if (files.length) addFiles(files);
   }
 
-  const grouped = useMemo(() => {
+  // Group by day into sections so each day's chip can be position:sticky
+  // within its own section — iMessage-style sticky day headers.
+  const sections = useMemo(() => {
     const out = [];
-    let lastDate = null;
+    let current = null;
     let prevSender = null;
     messages.forEach((m, i) => {
-      if (!lastDate || !sameDay(lastDate, m.createdAt)) {
-        out.push({ type: 'divider', key: `d-${i}-${m.id}`, date: m.createdAt });
-        lastDate = m.createdAt;
+      if (!current || !sameDay(current.date, m.createdAt)) {
+        current = { date: m.createdAt, key: `s-${i}-${m.id}`, items: [] };
+        out.push(current);
         prevSender = null;
       }
       const tightenTop = prevSender === m.sender;
       const next = messages[i + 1];
-      const tightenBottom = next && next.sender === m.sender && sameDay(m.createdAt, next.createdAt);
-      out.push({ type: 'msg', key: m.id, message: m, tightenTop, tightenBottom });
+      const tightenBottom =
+        next && next.sender === m.sender && sameDay(m.createdAt, next.createdAt);
+      current.items.push({ message: m, tightenTop, tightenBottom });
       prevSender = m.sender;
     });
     return out;
   }, [messages]);
+
+  const hasMessages = sections.length > 0;
 
   const presenceLabel = otherTyping
     ? 'typing…'
@@ -542,42 +547,45 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         )}
         {loading ? (
           <MessagesSkeleton />
-        ) : grouped.length === 0 ? (
+        ) : !hasMessages ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-ink-400 dark:text-ink-500">
             <div className="mb-2 text-4xl">👋</div>
             <div className="text-sm">Say hi to {otherUser.name}</div>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {grouped.map((item) =>
-              item.type === 'divider' ? (
-                <div key={item.key} className="my-3 flex items-center justify-center">
-                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-ink-500 shadow-soft ring-1 ring-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:ring-ink-700">
-                    {formatDayDivider(item.date)}
+          <div>
+            {sections.map((s) => (
+              <section key={s.key} className="space-y-1.5">
+                {/* Sticky day header — stays pinned at the top of the
+                    scroll container while its messages are in view. */}
+                <div className="sticky top-1 z-10 my-3 flex items-center justify-center pointer-events-none">
+                  <span className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-medium text-ink-500 shadow-soft ring-1 ring-ink-200 backdrop-blur-sm dark:bg-ink-800/85 dark:text-ink-300 dark:ring-ink-700">
+                    {formatDayDivider(s.date)}
                   </span>
                 </div>
-              ) : (
-                <div key={item.key} className={item.tightenTop ? 'mt-0.5' : 'mt-2.5'}>
-                  <MessageBubble
-                    message={item.message}
-                    isMine={item.message.sender === me.id}
-                    myId={me.id}
-                    otherUserName={otherUser.name}
-                    tightenTop={item.tightenTop}
-                    tightenBottom={item.tightenBottom}
-                    bubbleRef={(el) => {
-                      if (el) messageRefs.current.set(item.message.id, el);
-                      else messageRefs.current.delete(item.message.id);
-                    }}
-                    highlight={highlightId === item.message.id}
-                    onLongPress={(m) => setActionsFor(m)}
-                    onToggleReaction={(emoji) => toggleReaction(item.message, emoji)}
-                    onDoubleTap={(m, pos) => handleDoubleTap(m, pos)}
-                    onQuoteClick={(id) => scrollToMessage(id)}
-                  />
-                </div>
-              )
-            )}
+                {s.items.map((item) => (
+                  <div key={item.message.id} className={item.tightenTop ? 'mt-0.5' : 'mt-2.5'}>
+                    <MessageBubble
+                      message={item.message}
+                      isMine={item.message.sender === me.id}
+                      myId={me.id}
+                      otherUserName={otherUser.name}
+                      tightenTop={item.tightenTop}
+                      tightenBottom={item.tightenBottom}
+                      bubbleRef={(el) => {
+                        if (el) messageRefs.current.set(item.message.id, el);
+                        else messageRefs.current.delete(item.message.id);
+                      }}
+                      highlight={highlightId === item.message.id}
+                      onLongPress={(m) => setActionsFor(m)}
+                      onToggleReaction={(emoji) => toggleReaction(item.message, emoji)}
+                      onDoubleTap={(m, pos) => handleDoubleTap(m, pos)}
+                      onQuoteClick={(id) => scrollToMessage(id)}
+                    />
+                  </div>
+                ))}
+              </section>
+            ))}
             {otherTyping && <div className="pt-2"><TypingIndicator /></div>}
           </div>
         )}
