@@ -5,6 +5,11 @@
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 html, body {
@@ -17,9 +22,13 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-white text-ink-900 antialiased;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   overscroll-behavior-y: none;
+}
+
+.dark body {
+  @apply bg-ink-950 text-ink-100;
 }
 
 /* Prevent iOS Safari auto-zoom on focus */
@@ -36,12 +45,18 @@ input, textarea, select, button {
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgb(203 213 225); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: rgb(148 163 184); }
+  .dark ::-webkit-scrollbar-thumb { background: rgb(51 65 85); }
+  .dark ::-webkit-scrollbar-thumb:hover { background: rgb(71 85 105); }
 }
 
 .chat-bg {
   background-color: #f8fafc;
   background-image: radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.06) 1px, transparent 0);
   background-size: 24px 24px;
+}
+.dark .chat-bg {
+  background-color: #0b1224;
+  background-image: radial-gradient(circle at 1px 1px, rgba(129, 140, 248, 0.08) 1px, transparent 0);
 }
 
 .auth-bg {
@@ -50,8 +65,13 @@ input, textarea, select, button {
     radial-gradient(circle at 80% 90%, rgba(168, 85, 247, 0.15), transparent 55%),
     linear-gradient(180deg, #fafbff 0%, #f4f6ff 100%);
 }
+.dark .auth-bg {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.25), transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(168, 85, 247, 0.18), transparent 55%),
+    linear-gradient(180deg, #0a1024 0%, #050817 100%);
+}
 
-/* Prevent text selection on long-press for chat bubbles (but allow content) */
 .no-select {
   -webkit-user-select: none;
   user-select: none;
@@ -66,3 +86,23 @@ input, textarea, select, button {
   10%  { opacity: 1; }
   100% { transform: translateY(105vh) rotate(var(--confetti-rotate, 360deg)); opacity: 0; }
 }
+
+/* Reusable shimmer for skeleton blocks. Use as: <div class="skeleton" /> */
+.skeleton {
+  background: linear-gradient(90deg, rgb(241 245 249) 0%, rgb(226 232 240) 50%, rgb(241 245 249) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, rgb(30 41 59) 0%, rgb(51 65 85) 50%, rgb(30 41 59) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Selection */
+::selection { background: rgb(199 210 254); color: rgb(30 27 75); }
+.dark ::selection { background: rgb(67 56 202); color: rgb(238 242 255); }

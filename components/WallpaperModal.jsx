@@ -92,7 +92,7 @@ export function WallpaperModal({ open, onClose, otherUser, current, onSaved }) {
     <Modal open={open} onClose={onClose} title="Wallpaper">
       <div className="space-y-4">
         <div>
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Presets</div>
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-400 dark:text-ink-500">Presets</div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Object.entries(WALLPAPER_PRESETS).map(([key, p]) => {
               const active = key === 'default' ? isDefault : isPreset(key);
@@ -104,7 +104,7 @@ export function WallpaperModal({ open, onClose, otherUser, current, onSaved }) {
                   onClick={() => setPreset(key)}
                   className={clsx(
                     'group relative aspect-square overflow-hidden rounded-xl ring-1 transition active:scale-95',
-                    active ? 'ring-2 ring-brand-500' : 'ring-slate-200 hover:ring-slate-300'
+                    active ? 'ring-2 ring-brand-500 dark:ring-brand-400' : 'ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-600'
                   )}
                   style={p.style}
                 >
@@ -115,7 +115,7 @@ export function WallpaperModal({ open, onClose, otherUser, current, onSaved }) {
                     {p.label}
                   </div>
                   {active && (
-                    <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white shadow">
+                    <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white shadow-soft">
                       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
@@ -127,13 +127,13 @@ export function WallpaperModal({ open, onClose, otherUser, current, onSaved }) {
           </div>
         </div>
         <div>
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Custom</div>
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-400 dark:text-ink-500">Custom</div>
           <div className="flex gap-2">
             <button
               type="button"
               disabled={busy}
               onClick={() => fileRef.current?.click()}
-              className="flex-1 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-xs font-medium text-slate-600 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700"
+              className="flex-1 rounded-lg border border-dashed border-ink-300 px-3 py-3 text-xs font-medium text-ink-600 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 dark:border-ink-700 dark:text-ink-300 dark:hover:border-brand-400 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
             >
               Upload an image
             </button>
@@ -150,22 +150,22 @@ export function WallpaperModal({ open, onClose, otherUser, current, onSaved }) {
             />
           </div>
           {currentKind === 'image' && currentValue && (
-            <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 p-2 text-xs">
+            <div className="mt-2 flex items-center gap-2 rounded-lg bg-ink-50 p-2 text-xs dark:bg-ink-800">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={currentValue} alt="" className="h-12 w-12 rounded object-cover" />
-              <div className="flex-1 text-slate-600">Custom image</div>
+              <div className="flex-1 text-ink-600 dark:text-ink-300">Custom image</div>
               <button
                 type="button"
                 onClick={() => setPreset('default')}
-                className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                className="rounded-md px-2 py-1 text-xs font-medium text-red-600 transition active:scale-95 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
               >
                 Remove
               </button>
             </div>
           )}
         </div>
-        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
-        {busy && <div className="text-center text-xs text-slate-400">Saving…</div>}
+        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{err}</div>}
+        {busy && <div className="text-center text-xs text-ink-400 dark:text-ink-500">Saving…</div>}
       </div>
     </Modal>
   );

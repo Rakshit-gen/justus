@@ -42,7 +42,7 @@ export function SearchMessagesModal({ open, onClose, conversationId, otherUserNa
     const parts = text.split(re);
     return parts.map((p, i) =>
       re.test(p)
-        ? <mark key={i} className="bg-yellow-200 text-slate-900 rounded px-0.5">{p}</mark>
+        ? <mark key={i} className="bg-yellow-200 text-ink-900 rounded px-0.5 dark:bg-yellow-500/40 dark:text-yellow-100">{p}</mark>
         : <span key={i}>{p}</span>
     );
   }
@@ -55,31 +55,29 @@ export function SearchMessagesModal({ open, onClose, conversationId, otherUserNa
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Type to search…"
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100"
+          className="w-full rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:placeholder:text-ink-500 dark:focus:bg-ink-850 dark:focus:border-brand-400 dark:focus:ring-brand-400/20"
         />
-        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{err}</div>}
         <div className="max-h-80 min-h-[6rem] overflow-y-auto">
           {loading ? (
-            <div className="py-6 text-center text-sm text-slate-400">Searching…</div>
+            <div className="py-6 text-center text-sm text-ink-400 dark:text-ink-500">Searching…</div>
           ) : q.trim() === '' ? (
-            <div className="py-6 text-center text-sm text-slate-400">Find any message in this chat.</div>
+            <div className="py-6 text-center text-sm text-ink-400 dark:text-ink-500">Find any message in this chat.</div>
           ) : results.length === 0 ? (
-            <div className="py-6 text-center text-sm text-slate-400">No matches.</div>
+            <div className="py-6 text-center text-sm text-ink-400 dark:text-ink-500">No matches.</div>
           ) : (
             <ul className="-mx-2 space-y-0.5">
               {results.map((m) => (
                 <li key={m.id}>
                   <button
                     onClick={() => { onJump?.(m.id); onClose?.(); }}
-                    className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                    className="block w-full rounded-lg px-2 py-2 text-left transition hover:bg-ink-50 active:scale-[0.99] dark:hover:bg-ink-800"
                   >
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400">
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-ink-400 dark:text-ink-500">
                       <span>{m.sender === myId ? 'You' : (otherUserName || 'Them')}</span>
-                      <span>
-                        {formatDayDivider(m.createdAt)} · {formatMessageTime(m.createdAt)}
-                      </span>
+                      <span>{formatDayDivider(m.createdAt)} · {formatMessageTime(m.createdAt)}</span>
                     </div>
-                    <div className="mt-0.5 break-words whitespace-pre-wrap text-sm text-slate-800 line-clamp-3">
+                    <div className="mt-0.5 break-words whitespace-pre-wrap text-sm text-ink-800 line-clamp-3 dark:text-ink-100">
                       {highlight(m.content, q.trim())}
                     </div>
                   </button>

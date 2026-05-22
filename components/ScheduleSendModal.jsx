@@ -10,10 +10,7 @@ function toLocalInputValue(date) {
 }
 
 export function ScheduleSendModal({ open, onClose, otherUser, content, attachments, onScheduled, onClear }) {
-  const minDate = useMemo(() => {
-    const d = new Date(Date.now() + 60 * 1000);
-    return toLocalInputValue(d);
-  }, []);
+  const minDate = useMemo(() => toLocalInputValue(new Date(Date.now() + 60 * 1000)), []);
   const defaultDate = useMemo(() => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setSeconds(0, 0);
@@ -39,35 +36,34 @@ export function ScheduleSendModal({ open, onClose, otherUser, content, attachmen
       onScheduled?.(data.scheduled);
       onClear?.();
       onClose?.();
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setBusy(false);
-    }
+    } catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
   }
 
   return (
     <Modal open={open} onClose={onClose} title="Schedule send">
       <div className="space-y-3">
-        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-          <div className="text-xs text-slate-500">To {otherUser?.name}</div>
-          <div className="mt-1 line-clamp-3 whitespace-pre-wrap">{content || (attachments?.length ? `📎 ${attachments.length} attachment(s)` : '(empty)')}</div>
+        <div className="rounded-lg bg-ink-50 p-3 text-sm text-ink-700 dark:bg-ink-800 dark:text-ink-200">
+          <div className="text-xs text-ink-500 dark:text-ink-400">To {otherUser?.name}</div>
+          <div className="mt-1 line-clamp-3 whitespace-pre-wrap break-words">
+            {content || (attachments?.length ? `📎 ${attachments.length} attachment(s)` : '(empty)')}
+          </div>
         </div>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Deliver at</span>
+          <span className="mb-1 block text-xs font-medium text-ink-600 dark:text-ink-300">Deliver at</span>
           <input
             type="datetime-local"
             value={when}
             min={minDate}
             onChange={(e) => setWhen(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm text-ink-900 outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:focus:bg-ink-850 dark:focus:border-brand-400 dark:focus:ring-brand-400/20 dark:[color-scheme:dark]"
           />
         </label>
-        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{err}</div>}
         <button
           onClick={schedule}
           disabled={busy || !when || (!content && !attachments?.length)}
-          className="w-full rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-brand-600/30 transition active:scale-[0.99] disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-medium text-white shadow-brand-glow transition active:scale-[0.99] disabled:opacity-50"
         >
           {busy ? 'Scheduling…' : 'Schedule send'}
         </button>
@@ -80,13 +76,8 @@ export function ScheduledList({ open, onClose, otherUser }) {
   const [items, setItems] = useState(null);
   const [err, setErr] = useState('');
 
-  // Load when the modal opens; reset when it closes so we always fetch fresh.
   useEffect(() => {
-    if (!open) {
-      setItems(null);
-      setErr('');
-      return;
-    }
+    if (!open) { setItems(null); setErr(''); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -99,7 +90,7 @@ export function ScheduledList({ open, onClose, otherUser }) {
       } catch (e) {
         if (cancelled) return;
         setErr(e.message);
-        setItems([]); // exit the loading state even on error
+        setItems([]);
       }
     })();
     return () => { cancelled = true; };
@@ -109,37 +100,33 @@ export function ScheduledList({ open, onClose, otherUser }) {
     try {
       await api(`/api/scheduled-messages/${id}`, { method: 'DELETE' });
       setItems((prev) => (prev ? prev.filter((s) => s.id !== id) : prev));
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   }
 
   return (
     <Modal open={open} onClose={onClose} title={`Scheduled${otherUser ? ` for ${otherUser.name}` : ''}`}>
       <div className="space-y-2">
-        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+        {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{err}</div>}
         {items === null ? (
-          <div className="py-6 text-center text-sm text-slate-400">Loading…</div>
+          <div className="py-6 text-center text-sm text-ink-400 dark:text-ink-500">Loading…</div>
         ) : items.length === 0 ? (
-          <div className="py-6 text-center text-sm text-slate-400">No scheduled messages.</div>
+          <div className="py-6 text-center text-sm text-ink-400 dark:text-ink-500">No scheduled messages.</div>
         ) : (
           items.map((s) => (
-            <div key={s.id} className="rounded-lg bg-slate-50 p-3">
+            <div key={s.id} className="rounded-lg bg-ink-50 p-3 dark:bg-ink-800">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-ink-500 dark:text-ink-400">
                     {new Date(s.scheduledFor).toLocaleString()}
                   </div>
-                  <div className="mt-1 line-clamp-3 break-words whitespace-pre-wrap text-sm text-slate-800">
+                  <div className="mt-1 line-clamp-3 break-words whitespace-pre-wrap text-sm text-ink-800 dark:text-ink-100">
                     {s.content || `📎 ${s.attachments.length} attachment(s)`}
                   </div>
                 </div>
                 <button
                   onClick={() => cancel(s.id)}
-                  className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                >
-                  Cancel
-                </button>
+                  className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition active:scale-95 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                >Cancel</button>
               </div>
             </div>
           ))

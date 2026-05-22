@@ -14,16 +14,34 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#6366f1',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
 };
 
+// Pre-paints the right theme before React hydrates so users don't flash white
+// when their preference is dark.
+const themeInitScript = `
+(function () {
+  try {
+    var pref = localStorage.getItem('chatme.theme');
+    var dark =
+      pref === 'dark' ||
+      (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="h-full font-sans">
         <Providers>{children}</Providers>
       </body>

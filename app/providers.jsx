@@ -2,11 +2,14 @@
 
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from '@/context/SocketContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export function Providers({ children }) {
   return (
-    <AuthProvider>
-      <SocketProvider>{children}</SocketProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SocketProvider>{children}</SocketProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

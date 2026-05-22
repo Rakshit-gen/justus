@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import clsx from 'clsx';
 
-// Mobile bottom sheet / desktop centered modal — same component, responsive.
 export function Modal({ open, onClose, title, children, footer, sheetOnMobile = true, maxWidth = 'max-w-md' }) {
   useEffect(() => {
     if (!open) return;
@@ -22,29 +21,29 @@ export function Modal({ open, onClose, title, children, footer, sheetOnMobile = 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in dark:bg-black/60"
         onClick={onClose}
       />
       <div
         className={clsx(
-          'relative w-full overflow-hidden bg-white shadow-2xl animate-fade-in',
+          'relative w-full overflow-hidden bg-white shadow-soft-lg ring-1 ring-black/5 dark:bg-ink-900 dark:ring-white/5',
           sheetOnMobile
-            ? 'rounded-t-3xl sm:rounded-2xl sm:max-w-md sm:w-auto sm:min-w-[24rem]'
-            : 'rounded-2xl',
+            ? 'rounded-t-3xl animate-sheet-up sm:animate-spring-in sm:rounded-2xl sm:max-w-md sm:w-auto sm:min-w-[24rem]'
+            : 'rounded-2xl animate-spring-in',
           !sheetOnMobile && maxWidth
         )}
       >
         {sheetOnMobile && (
           <div className="flex justify-center pt-2 sm:hidden">
-            <div className="h-1.5 w-10 rounded-full bg-slate-300" />
+            <div className="h-1.5 w-10 rounded-full bg-ink-300 dark:bg-ink-700" />
           </div>
         )}
         {title && (
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-            <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3 dark:border-ink-800">
+            <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-100">{title}</h3>
             <button
               onClick={onClose}
-              className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+              className="rounded-md p-1 text-ink-500 transition hover:bg-ink-100 active:scale-95 dark:text-ink-400 dark:hover:bg-ink-800"
               aria-label="Close"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,7 +53,7 @@ export function Modal({ open, onClose, title, children, footer, sheetOnMobile = 
           </div>
         )}
         <div className="px-5 py-4 pb-safe">{children}</div>
-        {footer && <div className="border-t border-slate-100 px-5 py-3 pb-safe">{footer}</div>}
+        {footer && <div className="border-t border-ink-100 px-5 py-3 pb-safe dark:border-ink-800">{footer}</div>}
       </div>
     </div>
   );

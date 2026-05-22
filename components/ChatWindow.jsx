@@ -45,6 +45,8 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   const [dragOver, setDragOver] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0); // increment to trigger
   const [highlightId, setHighlightId] = useState(null);
+  const [scheduleDraft, setScheduleDraft] = useState('');
+  const [clearSignal, setClearSignal] = useState(0);
 
   const scrollRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -466,9 +468,9 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   return (
     <section className="flex h-full flex-1 flex-col" onDragEnter={onDragEnter} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-white/80 backdrop-blur px-3 py-3 sm:px-4">
+      <div className="flex items-center gap-3 border-b border-ink-200 bg-white/80 backdrop-blur px-3 py-3 sm:px-4 dark:border-ink-800 dark:bg-ink-900/80">
         {onBack && (
-          <button onClick={onBack} className="md:hidden -ml-1 rounded-md p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Back">
+          <button onClick={onBack} className="md:hidden -ml-1 rounded-md p-1.5 text-ink-500 hover:bg-ink-100 active:scale-90 dark:text-ink-400 dark:hover:bg-ink-800" aria-label="Back">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5" />
               <path d="M12 19l-7-7 7-7" />
@@ -477,19 +479,19 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         )}
         <UserAvatar name={otherUser.name} color={otherUser.avatarColor} avatarUrl={otherUser.avatarUrl} size={40} online={otherPresence.isOnline} showDot />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{otherUser.name}</div>
-          <div className={`text-xs transition-colors ${otherTyping ? 'text-brand-600' : otherPresence.isOnline ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <div className="truncate text-sm font-semibold text-ink-900 dark:text-ink-50">{otherUser.name}</div>
+          <div className={`text-xs transition-colors ${otherTyping ? 'text-brand-600 dark:text-brand-400' : otherPresence.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-400 dark:text-ink-500'}`}>
             {presenceLabel}
           </div>
         </div>
         {!connected && socket && (
-          <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
+          <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/30">
             reconnecting…
           </span>
         )}
         <button
           onClick={() => setScheduledOpen(true)}
-          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-md p-1.5 text-ink-500 transition active:scale-90 hover:bg-ink-100 hover:text-ink-700 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100"
           aria-label="Scheduled"
           title="Scheduled"
         >
@@ -500,7 +502,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         </button>
         <button
           onClick={() => setMoreOpen(true)}
-          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-md p-1.5 text-ink-500 transition active:scale-90 hover:bg-ink-100 hover:text-ink-700 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100"
           aria-label="More"
           title="More"
         >
@@ -521,7 +523,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
       >
         {loadingMore && (
           <div className="mb-2 flex justify-center">
-            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200">
+            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-ink-500 shadow-soft ring-1 ring-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:ring-ink-700">
               Loading older…
             </span>
           </div>
@@ -529,7 +531,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         {loading ? (
           <MessagesSkeleton />
         ) : grouped.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center text-slate-400">
+          <div className="flex h-full flex-col items-center justify-center text-center text-ink-400 dark:text-ink-500">
             <div className="mb-2 text-4xl">👋</div>
             <div className="text-sm">Say hi to {otherUser.name}</div>
           </div>
@@ -538,7 +540,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
             {grouped.map((item) =>
               item.type === 'divider' ? (
                 <div key={item.key} className="my-3 flex items-center justify-center">
-                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200">
+                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-ink-500 shadow-soft ring-1 ring-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:ring-ink-700">
                     {formatDayDivider(item.date)}
                   </span>
                 </div>
@@ -569,7 +571,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         )}
 
         {dragOver && (
-          <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50/80 text-brand-700">
+          <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50/80 text-brand-700 backdrop-blur-sm dark:border-brand-400/70 dark:bg-brand-500/15 dark:text-brand-200">
             <div className="flex flex-col items-center">
               <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -584,13 +586,13 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
 
       {/* Reply banner above input */}
       {replyingTo && (
-        <div className="flex items-start gap-2 border-t border-slate-200 bg-brand-50 px-4 py-2 text-xs">
-          <div className="mt-0.5 h-full w-1 shrink-0 rounded bg-brand-500" />
+        <div className="flex items-start gap-2 border-t border-ink-200 bg-brand-50 px-4 py-2 text-xs dark:border-ink-800 dark:bg-brand-500/10">
+          <div className="mt-0.5 h-full w-1 shrink-0 rounded bg-brand-500 dark:bg-brand-400" />
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-semibold text-brand-700">
+            <div className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">
               Replying to {replyingTo.sender === me.id ? 'yourself' : otherUser.name}
             </div>
-            <div className="truncate text-slate-600">
+            <div className="truncate text-ink-600 dark:text-ink-300">
               {replyingTo.content ||
                 (replyingTo.attachments?.some((a) => a.mimeType?.startsWith('image/'))
                   ? '📷 Photo'
@@ -599,7 +601,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
           </div>
           <button
             onClick={() => setReplyingTo(null)}
-            className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-100"
+            className="shrink-0 rounded-md p-1 text-ink-500 transition active:scale-90 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800"
             aria-label="Cancel reply"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -611,7 +613,10 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
 
       <MessageInput
         onSend={handleSend}
-        onSchedule={() => setScheduleOpen(true)}
+        onSchedule={(currentValue) => {
+          setScheduleDraft(currentValue || '');
+          setScheduleOpen(true);
+        }}
         onTypingChange={handleTypingChange}
         disabled={inputDisabled}
         attachments={pending}
@@ -620,6 +625,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         uploading={uploadingAny}
         editing={editing}
         onCancelEdit={() => setEditing(null)}
+        clearSignal={clearSignal}
       />
 
       <MessageActions
@@ -639,9 +645,13 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         open={scheduleOpen}
         onClose={() => setScheduleOpen(false)}
         otherUser={otherUser}
-        content={''}
+        content={scheduleDraft}
         attachments={pending.filter((p) => p.fileId).map((p) => ({ fileId: p.fileId, name: p.name, mimeType: p.mimeType, size: p.size, width: p.width, height: p.height }))}
-        onClear={() => { setPending([]); }}
+        onClear={() => {
+          setPending([]);
+          setScheduleDraft('');
+          setClearSignal((c) => c + 1);
+        }}
       />
       <ScheduledList open={scheduledOpen} onClose={() => setScheduledOpen(false)} otherUser={otherUser} />
 
@@ -733,9 +743,9 @@ function MenuItem({ label, icon, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-ink-700 transition active:scale-[0.98] hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800"
     >
-      <span className="text-slate-500">{icon}</span>
+      <span className="text-ink-500 dark:text-ink-400">{icon}</span>
       {label}
     </button>
   );
@@ -744,10 +754,10 @@ function MenuItem({ label, icon, onClick }) {
 function MessagesSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="flex justify-start"><div className="h-9 w-40 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" /></div>
-      <div className="flex justify-end"><div className="h-9 w-56 animate-pulse rounded-2xl bg-brand-100" /></div>
-      <div className="flex justify-start"><div className="h-9 w-32 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" /></div>
-      <div className="flex justify-end"><div className="h-9 w-44 animate-pulse rounded-2xl bg-brand-100" /></div>
+      <div className="flex justify-start"><div className="h-9 w-40 rounded-2xl skeleton ring-1 ring-ink-200 dark:ring-ink-700" /></div>
+      <div className="flex justify-end"><div className="h-9 w-56 rounded-2xl skeleton opacity-70" /></div>
+      <div className="flex justify-start"><div className="h-9 w-32 rounded-2xl skeleton ring-1 ring-ink-200 dark:ring-ink-700" /></div>
+      <div className="flex justify-end"><div className="h-9 w-44 rounded-2xl skeleton opacity-70" /></div>
     </div>
   );
 }

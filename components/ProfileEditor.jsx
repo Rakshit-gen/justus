@@ -76,7 +76,7 @@ export function ProfileEditor({ open, onClose, me, onUpdated }) {
           <UserAvatar name={me?.name} color={me?.avatarColor} avatarUrl={me?.avatarUrl} size={88} />
           <button
             onClick={() => fileRef.current?.click()}
-            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-md ring-2 ring-white"
+            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-soft-md ring-2 ring-white transition active:scale-90 dark:ring-ink-900"
             aria-label="Change avatar"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -93,39 +93,39 @@ export function ProfileEditor({ open, onClose, me, onUpdated }) {
           />
         </div>
         {me?.avatarUrl && (
-          <button onClick={removeAvatar} className="text-xs text-slate-500 underline hover:text-slate-700">
+          <button onClick={removeAvatar} className="text-xs text-ink-500 underline hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200">
             Remove avatar
           </button>
         )}
-        {uploading && <div className="text-xs text-slate-500">Uploading…</div>}
+        {uploading && <div className="text-xs text-ink-500 dark:text-ink-400">Uploading…</div>}
       </div>
       <div className="space-y-3">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Name</span>
+          <span className="mb-1 block text-xs font-medium text-ink-600 dark:text-ink-300">Name</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             minLength={2}
             maxLength={30}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:focus:bg-ink-850 dark:focus:border-brand-400 dark:focus:ring-brand-400/20"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Bio <span className="text-slate-400">(optional, max 140)</span></span>
+          <span className="mb-1 block text-xs font-medium text-ink-600 dark:text-ink-300">Bio <span className="text-ink-400 dark:text-ink-500">(optional, max 140)</span></span>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, 140))}
             rows={2}
             placeholder="Say something about yourself"
-            className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100"
+            className="w-full resize-none rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:placeholder:text-ink-500 dark:focus:bg-ink-850 dark:focus:border-brand-400 dark:focus:ring-brand-400/20"
           />
-          <div className="mt-0.5 text-right text-[10px] text-slate-400">{bio.length}/140</div>
+          <div className="mt-0.5 text-right text-[10px] text-ink-400 dark:text-ink-500">{bio.length}/140</div>
         </label>
-        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
+        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
         <button
           onClick={saveText}
           disabled={saving || !name.trim()}
-          className="w-full rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-brand-600/30 transition active:scale-[0.99] disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-medium text-white shadow-brand-glow transition active:scale-[0.99] hover:shadow-soft-lg disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

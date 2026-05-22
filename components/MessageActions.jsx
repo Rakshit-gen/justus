@@ -35,7 +35,9 @@ export function MessageActions({
               type="button"
               onClick={() => { onReact?.(e); onClose?.(); }}
               className={`flex h-11 w-11 items-center justify-center rounded-full text-2xl transition active:scale-90 ${
-                selected ? 'bg-brand-100 ring-2 ring-brand-400' : 'hover:bg-slate-100'
+                selected
+                  ? 'bg-brand-100 ring-2 ring-brand-400 dark:bg-brand-500/20 dark:ring-brand-400/60'
+                  : 'hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               {e}
@@ -107,11 +109,13 @@ function ActionButton({ label, icon, onClick, danger }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
-        danger ? 'text-red-600 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50'
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition active:scale-[0.98] ${
+        danger
+          ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10'
+          : 'text-ink-700 hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800'
       }`}
     >
-      <span className={danger ? 'text-red-500' : 'text-slate-500'}>{icon}</span>
+      <span className={danger ? 'text-red-500 dark:text-red-400' : 'text-ink-500 dark:text-ink-400'}>{icon}</span>
       {label}
     </button>
   );

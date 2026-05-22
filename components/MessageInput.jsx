@@ -22,8 +22,14 @@ export function MessageInput({
   uploading,
   editing,
   onCancelEdit,
+  clearSignal = 0,
 }) {
   const [value, setValue] = useState('');
+
+  // Parent can ask us to clear by bumping `clearSignal`.
+  useEffect(() => {
+    if (clearSignal > 0) setValue('');
+  }, [clearSignal]);
   const [showEmoji, setShowEmoji] = useState(false);
   const textareaRef = useRef(null);
   const fileRef = useRef(null);
@@ -109,17 +115,17 @@ export function MessageInput({
   const canSchedule = !editing && !disabled && (value.trim() || (attachments?.length || 0) > 0);
 
   return (
-    <div className="border-t border-slate-200 bg-white/85 backdrop-blur pb-safe">
+    <div className="border-t border-ink-200 bg-white/85 backdrop-blur pb-safe dark:border-ink-800 dark:bg-ink-900/90">
       {editing && (
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-2 text-xs text-slate-600">
+        <div className="flex items-center justify-between gap-2 border-b border-ink-100 px-4 py-2 text-xs text-ink-600 dark:border-ink-800 dark:text-ink-300">
           <div className="flex items-center gap-1.5">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-brand-600" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
             <span>Editing message</span>
           </div>
-          <button onClick={onCancelEdit} className="text-slate-500 underline hover:text-slate-700">cancel</button>
+          <button onClick={onCancelEdit} className="text-ink-500 underline hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200">cancel</button>
         </div>
       )}
 
@@ -132,18 +138,18 @@ export function MessageInput({
                 <img
                   src={att.previewUrl || att.url}
                   alt={att.name}
-                  className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+                  className="h-16 w-16 rounded-lg object-cover ring-1 ring-ink-200 dark:ring-ink-700"
                 />
               ) : (
-                <div className="flex h-16 w-32 items-center gap-2 overflow-hidden rounded-lg bg-slate-100 px-2 ring-1 ring-slate-200">
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="flex h-16 w-32 items-center gap-2 overflow-hidden rounded-lg bg-ink-100 px-2 ring-1 ring-ink-200 dark:bg-ink-800 dark:ring-ink-700">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-ink-500 dark:text-ink-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                   <div className="min-w-0 w-0 flex-1">
-                    <div className="block truncate text-[11px] font-medium">{att.name}</div>
-                    <div className="text-[10px] text-slate-500">{formatBytes(att.size)}</div>
+                    <div className="block truncate text-[11px] font-medium dark:text-ink-100">{att.name}</div>
+                    <div className="text-[10px] text-ink-500 dark:text-ink-400">{formatBytes(att.size)}</div>
                   </div>
                 </div>
               )}
@@ -171,7 +177,7 @@ export function MessageInput({
           <div className="absolute bottom-full left-2 right-2 z-30 mb-2 sm:right-auto sm:w-80">
             <EmojiPicker onSelect={insertEmoji} />
             <div className="mt-1 text-right">
-              <button onClick={() => setShowEmoji(false)} className="rounded-md bg-white px-2 py-1 text-[11px] text-slate-500 shadow ring-1 ring-slate-200">
+              <button onClick={() => setShowEmoji(false)} className="rounded-md bg-white px-2 py-1 text-[11px] text-ink-500 shadow ring-1 ring-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:ring-ink-700">
                 close
               </button>
             </div>
@@ -224,12 +230,12 @@ export function MessageInput({
             rows={1}
             placeholder={disabled ? 'Reconnecting…' : editing ? 'Edit your message…' : 'Type a message…'}
             disabled={disabled}
-            className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm leading-relaxed outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 disabled:opacity-60"
+            className="min-w-0 flex-1 resize-none rounded-2xl border border-ink-200 bg-ink-50 px-4 py-2.5 text-sm leading-relaxed text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:placeholder:text-ink-500 dark:focus:border-brand-400 dark:focus:bg-ink-850 dark:focus:ring-brand-400/20"
           />
           {canSchedule && (
             <IconButton
               ariaLabel="Schedule send"
-              onClick={onSchedule}
+              onClick={() => onSchedule?.(value)}
               icon={
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -268,8 +274,8 @@ function IconButton({ icon, onClick, ariaLabel, active }) {
       onClick={onClick}
       aria-label={ariaLabel}
       className={clsx(
-        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-95',
-        active && 'bg-slate-100 text-brand-600'
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-500 transition hover:bg-ink-100 hover:text-ink-800 active:scale-90 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100',
+        active && 'bg-ink-100 text-brand-600 dark:bg-ink-800 dark:text-brand-300'
       )}
     >
       <span className="h-5 w-5 block">{icon}</span>

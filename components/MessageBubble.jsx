@@ -70,7 +70,9 @@ function AttachmentRender({ att, isMine }) {
     <a href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} title={att.name}
       className={clsx(
         'flex w-full max-w-[260px] items-center gap-2 overflow-hidden rounded-xl px-3 py-2 text-sm transition sm:max-w-[320px]',
-        isMine ? 'bg-white/20 hover:bg-white/25' : 'bg-slate-100 hover:bg-slate-200'
+        isMine
+          ? 'bg-white/20 hover:bg-white/25'
+          : 'bg-ink-100 hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700'
       )}>
       <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -101,16 +103,16 @@ function ReplyQuote({ preview, isMine, isFromMe, otherUserName, onClick }) {
       type="button"
       onClick={onClick}
       className={clsx(
-        'mb-1.5 -mx-1 block w-full overflow-hidden rounded-lg border-l-2 px-2 py-1 text-left transition',
+        'mb-1.5 -mx-1 block w-full overflow-hidden rounded-lg border-l-2 px-2 py-1 text-left transition active:scale-[0.98]',
         isMine
           ? 'border-white/80 bg-white/15 hover:bg-white/20'
-          : 'border-brand-500 bg-brand-50 hover:bg-brand-100'
+          : 'border-brand-500 bg-brand-50 hover:bg-brand-100 dark:border-brand-400 dark:bg-brand-500/15 dark:hover:bg-brand-500/25'
       )}
     >
-      <div className={clsx('text-[10px] font-semibold', isMine ? 'text-white/90' : 'text-brand-700')}>
+      <div className={clsx('text-[10px] font-semibold', isMine ? 'text-white/90' : 'text-brand-700 dark:text-brand-300')}>
         {senderLabel}
       </div>
-      <div className={clsx('truncate text-[11px]', isMine ? 'text-white/80' : 'text-slate-600')}>
+      <div className={clsx('truncate text-[11px]', isMine ? 'text-white/80' : 'text-ink-600 dark:text-ink-400')}>
         {snippet}
       </div>
     </button>
@@ -134,10 +136,10 @@ function ReactionsBar({ reactions, myId, onToggle }) {
             type="button"
             onClick={() => onToggle?.(emoji)}
             className={clsx(
-              'flex items-center gap-1 rounded-full px-2 py-0.5 text-xs leading-none transition active:scale-95',
+              'animate-pop flex items-center gap-1 rounded-full px-2 py-0.5 text-xs leading-none transition active:scale-90',
               mine
-                ? 'bg-brand-100 text-brand-700 ring-1 ring-brand-300'
-                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                ? 'bg-brand-100 text-brand-700 ring-1 ring-brand-300 dark:bg-brand-500/25 dark:text-brand-200 dark:ring-brand-400/50'
+                : 'bg-white text-ink-700 ring-1 ring-ink-200 hover:bg-ink-50 dark:bg-ink-800 dark:text-ink-200 dark:ring-ink-700 dark:hover:bg-ink-750'
             )}
           >
             <span className="text-sm">{emoji}</span>
@@ -195,16 +197,27 @@ export function MessageBubble({
   const theirCorners = clsx('rounded-2xl', tightenTop && 'rounded-tl-md', !tightenBottom && 'rounded-bl-md');
 
   return (
-    <div ref={bubbleRef} className={clsx('flex w-full animate-fade-in', isMine ? 'justify-end' : 'justify-start')}>
-      <div className={clsx('max-w-[82%] sm:max-w-[65%]', highlight && 'ring-2 ring-brand-400 rounded-2xl')}>
+    <div ref={bubbleRef} className={clsx('flex w-full animate-bubble-in', isMine ? 'justify-end' : 'justify-start')}>
+      <div
+        className={clsx(
+          'max-w-[82%] transition-shadow sm:max-w-[65%]',
+          highlight && 'ring-2 ring-brand-400 rounded-2xl'
+        )}
+      >
         <div
           {...(isDeleted ? {} : longPress)}
           onClick={isDeleted ? undefined : handleClick}
           className={clsx(
-            'px-3.5 py-2 text-sm leading-relaxed shadow-sm no-select touch-none cursor-default',
+            'px-3.5 py-2 text-sm leading-relaxed no-select touch-manipulation cursor-default',
             isMine
-              ? clsx('bg-gradient-to-br from-brand-500 to-brand-700 text-white', mineCorners)
-              : clsx('bg-white text-slate-800 ring-1 ring-slate-200', theirCorners),
+              ? clsx(
+                  'bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-brand-glow',
+                  mineCorners
+                )
+              : clsx(
+                  'bg-white text-ink-800 ring-1 ring-ink-200 shadow-soft dark:bg-ink-800 dark:text-ink-100 dark:ring-ink-700',
+                  theirCorners
+                ),
             isDeleted && 'opacity-80 italic'
           )}
         >
@@ -242,7 +255,7 @@ export function MessageBubble({
           <div
             className={clsx(
               'mt-1 flex items-center justify-end gap-1.5 text-[10px]',
-              isMine ? 'text-white/80' : 'text-slate-400'
+              isMine ? 'text-white/80' : 'text-ink-400 dark:text-ink-500'
             )}
           >
             {isEdited && <span className="opacity-80">edited</span>}

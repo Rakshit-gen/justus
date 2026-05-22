@@ -278,7 +278,7 @@ export default function ChatPage() {
   if (loading || !auth?.user) return <FullPageSpinner />;
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-slate-50">
+    <div className="flex h-full w-full overflow-hidden bg-ink-50 dark:bg-ink-950">
       <div className={`${activeOther ? 'hidden md:flex' : 'flex'} h-full w-full md:w-80 flex-col`}>
         <Sidebar
           me={auth.user}
@@ -354,8 +354,8 @@ export default function ChatPage() {
 
 function FullPageSpinner() {
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="flex items-center gap-2 text-sm text-slate-400">
+    <div className="flex h-full items-center justify-center bg-white dark:bg-ink-950">
+      <div className="flex items-center gap-2 text-sm text-ink-400 dark:text-ink-500">
         <span className="h-2 w-2 animate-pulse-dot rounded-full bg-brand-500" />
         <span className="h-2 w-2 animate-pulse-dot rounded-full bg-brand-500" style={{ animationDelay: '150ms' }} />
         <span className="h-2 w-2 animate-pulse-dot rounded-full bg-brand-500" style={{ animationDelay: '300ms' }} />
@@ -368,15 +368,15 @@ function EmptyChatState({ onAdd, hasFriends }) {
   return (
     <div className="flex h-full flex-1 items-center justify-center chat-bg px-4">
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-600/30">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-brand-glow">
           <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-slate-700">
+        <h2 className="text-lg font-semibold text-ink-800 dark:text-ink-100">
           {hasFriends ? 'Your conversations live here' : 'No friends yet'}
         </h2>
-        <p className="mt-1 max-w-xs text-sm text-slate-500">
+        <p className="mt-1 max-w-xs text-sm text-ink-500 dark:text-ink-400">
           {hasFriends
             ? 'Pick someone from the sidebar to start chatting.'
             : 'Add a friend to start chatting. Both sides need to accept before any messages go through.'}
@@ -384,7 +384,7 @@ function EmptyChatState({ onAdd, hasFriends }) {
         {!hasFriends && (
           <button
             onClick={onAdd}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-sm font-medium text-white shadow-md shadow-brand-600/30 transition active:scale-[0.99]"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-sm font-medium text-white shadow-brand-glow transition active:scale-[0.99]"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />

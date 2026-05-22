@@ -35,42 +35,31 @@ export function FriendRequestsModal({
       const data = await api(`/api/friends/requests/${req.id}`, { method: 'POST' });
       onAccepted?.(data.friend);
       onIncomingRemoved?.(req.id);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      mark(req.id, false);
-    }
+    } catch (e) { alert(e.message); }
+    finally { mark(req.id, false); }
   }
-
   async function decline(req) {
     mark(req.id, true);
     try {
       await api(`/api/friends/requests/${req.id}`, { method: 'DELETE' });
       onIncomingRemoved?.(req.id);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      mark(req.id, false);
-    }
+    } catch (e) { alert(e.message); }
+    finally { mark(req.id, false); }
   }
-
   async function cancel(req) {
     mark(req.id, true);
     try {
       await api(`/api/friends/requests/${req.id}`, { method: 'DELETE' });
       onOutgoingRemoved?.(req.id);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      mark(req.id, false);
-    }
+    } catch (e) { alert(e.message); }
+    finally { mark(req.id, false); }
   }
 
   const list = tab === 'incoming' ? incoming : outgoing;
 
   return (
     <Modal open={open} onClose={onClose} title="Friend requests">
-      <div className="mb-3 flex rounded-lg bg-slate-100 p-0.5">
+      <div className="mb-3 flex rounded-lg bg-ink-100 p-0.5 dark:bg-ink-800">
         <TabButton active={tab === 'incoming'} onClick={() => setTab('incoming')}>
           Incoming{incoming.length ? ` (${incoming.length})` : ''}
         </TabButton>
@@ -81,7 +70,7 @@ export function FriendRequestsModal({
 
       <div className="max-h-72 overflow-y-auto">
         {list.length === 0 ? (
-          <div className="py-8 text-center text-sm text-slate-400">
+          <div className="py-8 text-center text-sm text-ink-400 dark:text-ink-500">
             {tab === 'incoming' ? 'No incoming requests.' : 'No sent requests.'}
           </div>
         ) : (
@@ -89,37 +78,31 @@ export function FriendRequestsModal({
             const user = tab === 'incoming' ? req.from : req.to;
             const busy = busyIds.has(req.id);
             return (
-              <div key={req.id} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
+              <div key={req.id} className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-ink-50 dark:hover:bg-ink-800">
                 <UserAvatar name={user.name} color={user.avatarColor} avatarUrl={user.avatarUrl} size={36} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{user.name}</div>
-                  {user.bio && <div className="truncate text-xs text-slate-500">{user.bio}</div>}
+                  <div className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">{user.name}</div>
+                  {user.bio && <div className="truncate text-xs text-ink-500 dark:text-ink-400">{user.bio}</div>}
                 </div>
                 {tab === 'incoming' ? (
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
                       onClick={() => accept(req)}
                       disabled={busy}
-                      className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      Accept
-                    </button>
+                      className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition active:scale-95 hover:bg-emerald-700 disabled:opacity-60"
+                    >Accept</button>
                     <button
                       onClick={() => decline(req)}
                       disabled={busy}
-                      className="rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-60"
-                    >
-                      Decline
-                    </button>
+                      className="rounded-md px-3 py-1.5 text-xs font-medium text-ink-600 transition active:scale-95 hover:bg-ink-100 disabled:opacity-60 dark:text-ink-300 dark:hover:bg-ink-700"
+                    >Decline</button>
                   </div>
                 ) : (
                   <button
                     onClick={() => cancel(req)}
                     disabled={busy}
-                    className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
+                    className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-red-600 transition active:scale-95 hover:bg-red-50 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-500/10"
+                  >Cancel</button>
                 )}
               </div>
             );
@@ -135,7 +118,9 @@ function TabButton({ active, children, onClick }) {
     <button
       onClick={onClick}
       className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition ${
-        active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+        active
+          ? 'bg-white text-ink-900 shadow-soft dark:bg-ink-950 dark:text-ink-50'
+          : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200'
       }`}
     >
       {children}
