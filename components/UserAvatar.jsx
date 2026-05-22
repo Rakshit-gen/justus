@@ -43,12 +43,22 @@ export function UserAvatar({ name, color, avatarUrl, size = 40, online = false, 
       </div>
       {showDot && (
         <span
-          className={clsx(
-            'absolute bottom-0 right-0 block rounded-full ring-2 ring-white transition-colors',
-            online ? 'bg-emerald-500' : 'bg-slate-300'
-          )}
+          className="absolute bottom-0 right-0 block"
           style={{ width: size * 0.28, height: size * 0.28 }}
-        />
+        >
+          {online && (
+            <span
+              className="absolute inset-0 rounded-full bg-emerald-400 animate-ring-pulse"
+              aria-hidden
+            />
+          )}
+          <span
+            className={clsx(
+              'absolute inset-0 block rounded-full ring-2 ring-white transition-colors dark:ring-ink-900',
+              online ? 'bg-emerald-500' : 'bg-ink-300 dark:bg-ink-600'
+            )}
+          />
+        </span>
       )}
     </div>
   );

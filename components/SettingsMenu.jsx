@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/context/ThemeContext';
@@ -10,6 +11,17 @@ import clsx from 'clsx';
 export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, onLogout }) {
   const { settings, update } = useSettings();
   const { preference, setTheme } = useTheme();
+  // Tracks the theme that was JUST clicked, used to play a one-shot spin.
+  const [recentSpin, setRecentSpin] = useState(null);
+  function pickTheme(next) {
+    setTheme(next);
+    setRecentSpin(next);
+  }
+  useEffect(() => {
+    if (recentSpin === null) return;
+    const t = setTimeout(() => setRecentSpin(null), 700);
+    return () => clearTimeout(t);
+  }, [recentSpin]);
 
   async function toggleNotifications(next) {
     if (!next) {
@@ -46,7 +58,8 @@ export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, on
       <div className="mb-2 grid grid-cols-3 gap-1.5 rounded-xl bg-ink-100 p-1 dark:bg-ink-800">
         <ThemeChoice
           active={preference === 'light'}
-          onClick={() => setTheme('light')}
+          spinning={recentSpin === 'light'}
+          onClick={() => pickTheme('light')}
           label="Light"
           icon={
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,7 +70,8 @@ export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, on
         />
         <ThemeChoice
           active={preference === 'dark'}
-          onClick={() => setTheme('dark')}
+          spinning={recentSpin === 'dark'}
+          onClick={() => pickTheme('dark')}
           label="Dark"
           icon={
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -67,7 +81,8 @@ export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, on
         />
         <ThemeChoice
           active={preference === 'system'}
-          onClick={() => setTheme('system')}
+          spinning={recentSpin === 'system'}
+          onClick={() => pickTheme('system')}
           label="System"
           icon={
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -138,7 +153,7 @@ export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, on
   );
 }
 
-function ThemeChoice({ active, onClick, label, icon }) {
+function ThemeChoice({ active, spinning, onClick, label, icon }) {
   return (
     <button
       type="button"
@@ -150,7 +165,7 @@ function ThemeChoice({ active, onClick, label, icon }) {
           : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200'
       )}
     >
-      {icon}
+      <span className={`inline-block ${spinning ? 'animate-spin-soft' : ''}`}>{icon}</span>
       {label}
     </button>
   );

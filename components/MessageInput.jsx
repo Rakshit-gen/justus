@@ -25,6 +25,7 @@ export function MessageInput({
   clearSignal = 0,
 }) {
   const [value, setValue] = useState('');
+  const [swooshKey, setSwooshKey] = useState(0); // bump to replay send animation
 
   // Parent can ask us to clear by bumping `clearSignal`.
   useEffect(() => {
@@ -105,6 +106,7 @@ export function MessageInput({
     setValue('');
     setTyping(false);
     clearTimeout(typingTimerRef.current);
+    setSwooshKey((k) => k + 1);
   }
 
   function insertEmoji(e) {
@@ -255,7 +257,16 @@ export function MessageInput({
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                key={swooshKey}
+                viewBox="0 0 24 24"
+                className={`h-5 w-5 ${swooshKey > 0 ? 'animate-send-swoosh' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M22 2L11 13" />
                 <path d="M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>

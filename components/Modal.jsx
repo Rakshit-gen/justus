@@ -43,10 +43,10 @@ export function Modal({ open, onClose, title, children, footer, sheetOnMobile = 
             <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-100">{title}</h3>
             <button
               onClick={onClose}
-              className="rounded-md p-1 text-ink-500 transition hover:bg-ink-100 active:scale-95 dark:text-ink-400 dark:hover:bg-ink-800"
+              className="group rounded-md p-1 text-ink-500 transition hover:bg-ink-100 active:scale-95 dark:text-ink-400 dark:hover:bg-ink-800"
               aria-label="Close"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>

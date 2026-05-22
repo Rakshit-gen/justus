@@ -176,7 +176,7 @@ export function MessageBubble({
     { delay: 450 }
   );
 
-  function handleClick() {
+  function handleClick(e) {
     if (longPressFiredRef.current) {
       longPressFiredRef.current = false;
       return;
@@ -184,7 +184,8 @@ export function MessageBubble({
     const now = Date.now();
     if (lastTapAtRef.current && now - lastTapAtRef.current < DOUBLE_TAP_WINDOW_MS) {
       lastTapAtRef.current = 0;
-      onDoubleTap?.(message);
+      // Pass the tap viewport coordinates so the parent can spawn a floating heart.
+      onDoubleTap?.(message, { x: e.clientX, y: e.clientY });
     } else {
       lastTapAtRef.current = now;
     }

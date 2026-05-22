@@ -47,6 +47,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   const [highlightId, setHighlightId] = useState(null);
   const [scheduleDraft, setScheduleDraft] = useState('');
   const [clearSignal, setClearSignal] = useState(0);
+  const [floatingHearts, setFloatingHearts] = useState([]); // [{ id, x, y }] tap-relative to scroll container
 
   const scrollRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -407,9 +408,20 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   function startReply(message) {
     setReplyingTo(message);
   }
-  function handleDoubleTap(message) {
+  function handleDoubleTap(message, pos) {
     if (message.deletedAt) return;
     toggleReaction(message, '❤️');
+    // Spawn a floating heart from the tap position (relative to chat scroller).
+    if (pos && scrollRef.current) {
+      const rect = scrollRef.current.getBoundingClientRect();
+      const x = pos.x - rect.left;
+      const y = pos.y - rect.top;
+      const id = `h_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      setFloatingHearts((prev) => [...prev, { id, x, y }]);
+      setTimeout(() => {
+        setFloatingHearts((prev) => prev.filter((h) => h.id !== id));
+      }, 1200);
+    }
   }
   function scrollToMessage(id) {
     if (!id) return;
@@ -560,7 +572,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
                     highlight={highlightId === item.message.id}
                     onLongPress={(m) => setActionsFor(m)}
                     onToggleReaction={(emoji) => toggleReaction(item.message, emoji)}
-                    onDoubleTap={(m) => handleDoubleTap(m)}
+                    onDoubleTap={(m, pos) => handleDoubleTap(m, pos)}
                     onQuoteClick={(id) => scrollToMessage(id)}
                   />
                 </div>
@@ -569,6 +581,20 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
             {otherTyping && <div className="pt-2"><TypingIndicator /></div>}
           </div>
         )}
+
+        {/* Floating hearts spawned by double-tap. Positioned absolutely
+            relative to the scroll container; pointer-events-none so they
+            never block clicks. */}
+        {floatingHearts.map((h) => (
+          <span
+            key={h.id}
+            className="pointer-events-none absolute select-none text-3xl animate-heart-float"
+            style={{ left: h.x, top: h.y }}
+            aria-hidden
+          >
+            ❤️
+          </span>
+        ))}
 
         {dragOver && (
           <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50/80 text-brand-700 backdrop-blur-sm dark:border-brand-400/70 dark:bg-brand-500/15 dark:text-brand-200">
