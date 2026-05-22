@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 const { connectDB } = require('@/lib/db');
 const Conversation = require('@/lib/models/Conversation');
+const Message = require('@/lib/models/Message'); // required so Mongoose has it registered when findOrCreateBetween runs
 const User = require('@/lib/models/User');
 const Friendship = require('@/lib/models/Friendship');
 const { requireUserId } = require('@/lib/auth');
