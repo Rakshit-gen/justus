@@ -14,6 +14,11 @@ import { Modal } from './Modal';
 import { ConfettiBurst, isCelebration } from './Confetti';
 import { api } from '@/lib/apiClient';
 import { uploadFile, readImageDimensions } from '@/lib/uploadClient';
+import {
+  getCachedMessages,
+  setCachedMessages,
+  upsertCachedMessage,
+} from '@/lib/messageCache';
 import { useSocket } from '@/context/SocketContext';
 import { formatDayDivider, formatLastSeen, sameDay } from '@/utils/date';
 
@@ -73,18 +78,43 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherUser.id]);
 
-  // History load
+  // History load — stale-while-revalidate.
+  // 1) Paint cached messages instantly (zero ms), kill the loading state.
+  // 2) Fetch latest in the background; merge by id when it returns.
   useEffect(() => {
-    if (!conversationId) { setLoading(false); return; }
+    if (!conversationId) return;
+
+    const cached = getCachedMessages(conversationId);
+    if (cached && cached.length > 0) {
+      setMessages((current) => {
+        // Merge cache with any optimistic messages already in flight.
+        const map = new Map();
+        for (const m of cached) map.set(m.id, m);
+        for (const m of current) if (!map.has(m.id)) map.set(m.id, m);
+        const merged = Array.from(map.values()).sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
+        return merged;
+      });
+      setLoading(false);
+    }
+
     let cancelled = false;
     (async () => {
       try {
         const data = await api(`/api/messages/${conversationId}`);
         if (cancelled) return;
         setMessages((current) => {
-          const merged = [...data.messages];
-          for (const m of current) if (!merged.some((f) => f.id === m.id)) merged.push(m);
-          merged.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          // Server data is authoritative for the messages it returns. Keep
+          // any local-only ones (optimistic temp messages, or messages newer
+          // than the page we just fetched).
+          const map = new Map();
+          for (const m of data.messages) map.set(m.id, m);
+          for (const m of current) if (!map.has(m.id)) map.set(m.id, m);
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          );
+          setCachedMessages(conversationId, merged);
           return merged;
         });
         setHasMore(Boolean(data.hasMore));
@@ -133,6 +163,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         return;
       }
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      upsertCachedMessage(msg.conversationId, msg);
       onConvoUpdate?.({ otherUserId: msg.sender === me.id ? msg.recipient : msg.sender, newMessage: msg });
       maybeCelebrate(msg);
     }
@@ -143,6 +174,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         (msg.sender === me.id && msg.recipient === otherUser.id);
       if (!involvesThisChat) return;
       setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, ...msg } : m)));
+      upsertCachedMessage(msg.conversationId, msg);
     }
 
     function onDelivered({ messageId, conversationId: cId, deliveredAt }) {
@@ -362,6 +394,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
           if (prev.some((m) => m.id === saved.id)) return prev;
           return [...prev, saved];
         });
+        upsertCachedMessage(saved.conversationId, saved);
         onConvoUpdate?.({ otherUserId: otherUser.id, newMessage: saved, conversationId: saved.conversationId });
       }
     );

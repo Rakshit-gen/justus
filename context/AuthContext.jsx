@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/apiClient';
+import { clearMessageCache } from '@/lib/messageCache';
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = 'chatme.auth';
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
   }, [persist]);
 
   const logout = useCallback(() => {
+    clearMessageCache();
     persist(null);
     router.push('/login');
   }, [persist, router]);
