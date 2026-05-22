@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+html, body {
+  height: 100%;
+  height: 100dvh;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  overscroll-behavior-y: none;
+}
+
+/* Prevent iOS Safari auto-zoom on focus */
+input, textarea, select, button {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input, textarea, select, button { font-size: inherit; }
+}
+
+/* Subtle scrollbar (desktop only) */
+@media (hover: hover) {
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(203 213 225); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(148 163 184); }
+}
+
+.chat-bg {
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.06) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.auth-bg {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.18), transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(168, 85, 247, 0.15), transparent 55%),
+    linear-gradient(180deg, #fafbff 0%, #f4f6ff 100%);
+}
+
+/* Prevent text selection on long-press for chat bubbles (but allow content) */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.pb-safe { padding-bottom: max(0.75rem, var(--safe-bottom)); }
+.pt-safe { padding-top: max(0.75rem, var(--safe-top)); }
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(var(--confetti-rotate, 360deg)); opacity: 0; }
+}
