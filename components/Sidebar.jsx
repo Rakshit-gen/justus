@@ -36,8 +36,10 @@ export function Sidebar({
     const list = friends.map((u) => {
       const c = convoByOther.get(u.id);
       const s = chatSettings[u.id] || {};
+      const displayName = s.nickname || u.name;
       return {
         user: u,
+        displayName,
         pinned: Boolean(s.pinned),
         lastMessage: c?.lastMessage || null,
         unread: c?.unread || 0,
@@ -49,12 +51,12 @@ export function Sidebar({
       if (a.updatedAt && b.updatedAt) return new Date(b.updatedAt) - new Date(a.updatedAt);
       if (a.updatedAt) return -1;
       if (b.updatedAt) return 1;
-      return a.user.name.localeCompare(b.user.name);
+      return a.displayName.localeCompare(b.displayName);
     });
   }, [friends, conversations, chatSettings]);
 
   const filtered = query
-    ? rows.filter((r) => r.user.name.toLowerCase().includes(query.toLowerCase()))
+    ? rows.filter((r) => r.displayName.toLowerCase().includes(query.toLowerCase()))
     : rows;
 
   return (
@@ -191,11 +193,11 @@ function SidebarRow({ row, active, onSelect, onLongPress }) {
           : 'hover:bg-ink-50 dark:hover:bg-ink-800/60'
       )}
     >
-      <UserAvatar name={u.name} color={u.avatarColor} avatarUrl={u.avatarUrl} size={44} online={u.isOnline} showDot />
+      <UserAvatar name={row.displayName || u.name} color={u.avatarColor} avatarUrl={u.avatarUrl} size={44} online={u.isOnline} showDot />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <div className={clsx('flex min-w-0 items-center gap-1.5', active ? 'text-brand-700 dark:text-brand-300' : 'text-ink-900 dark:text-ink-100')}>
-            <span className="truncate text-sm font-medium">{u.name}</span>
+            <span className="truncate text-sm font-medium">{row.displayName || u.name}</span>
             {row.pinned && (
               <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 text-ink-400 dark:text-ink-500" fill="currentColor" stroke="none" aria-label="Pinned">
                 <path d="M16 12V4h1a1 1 0 0 0 0-2H7a1 1 0 0 0 0 2h1v8l-3 3v2h6v6l1 1 1-1v-6h6v-2l-3-3z" />

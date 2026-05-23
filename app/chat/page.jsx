@@ -101,7 +101,8 @@ export default function ChatPage() {
       if (incomingMsg) {
         if (settings.soundOn) { try { playMessageSound(); } catch {} }
         if (settings.notificationsOn && tabHidden && notificationPermission() === 'granted') {
-          const senderName = friends.find((u) => u.id === otherId)?.name || 'Someone';
+          const friend = friends.find((u) => u.id === otherId);
+          const senderName = chatSettings[otherId]?.nickname || friend?.name || 'Someone';
           const preview = msg.content || (msg.attachments?.length ? '📎 Attachment' : '');
           showNotification(senderName, { body: preview, tag: `chatme-${otherId}` });
         }
@@ -181,6 +182,16 @@ export default function ChatPage() {
       setActiveOther((prev) => (prev && prev.id === removedId ? null : prev));
     }
 
+    function onDisappearingUpdated({ otherUserId, ttlSeconds }) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.otherUser?.id === otherUserId
+            ? { ...c, disappearingTtl: Number(ttlSeconds) || 0 }
+            : c
+        )
+      );
+    }
+
     socket.on('message:new', onNew);
     socket.on('message:updated', onUpdated);
     socket.on('presence', onPresence);
@@ -189,6 +200,7 @@ export default function ChatPage() {
     socket.on('friend:request:cancelled', onFriendRequestCancelled);
     socket.on('friend:accepted', onFriendAccepted);
     socket.on('friend:removed', onFriendRemoved);
+    socket.on('convo:disappearing:updated', onDisappearingUpdated);
 
     return () => {
       socket.off('message:new', onNew);
@@ -199,8 +211,31 @@ export default function ChatPage() {
       socket.off('friend:request:cancelled', onFriendRequestCancelled);
       socket.off('friend:accepted', onFriendAccepted);
       socket.off('friend:removed', onFriendRemoved);
+      socket.off('convo:disappearing:updated', onDisappearingUpdated);
     };
-  }, [socket, auth?.user, friends, updateUser, settings.soundOn, settings.notificationsOn]);
+  }, [socket, auth?.user, friends, chatSettings, updateUser, settings.soundOn, settings.notificationsOn]);
+
+  // Wire the hardware/gesture back button to the in-app back action. When a
+  // chat is open, we push a synthetic history entry; the next `popstate` then
+  // clears the active chat instead of exiting the PWA.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!activeOther) return;
+    window.history.pushState({ chatmeChat: activeOther.id }, '');
+    function onPop() {
+      setActiveOther(null);
+    }
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [activeOther?.id]);
+
+  const closeActive = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.state?.chatmeChat) {
+      window.history.back();
+    } else {
+      setActiveOther(null);
+    }
+  }, []);
 
   const handleSelectUser = useCallback(async (user) => {
     setActiveOther(user);
@@ -305,7 +340,10 @@ export default function ChatPage() {
             otherUser={activeOther}
             conversationId={activeConvoId}
             chatSetting={chatSettings[activeOther.id]}
-            onBack={() => setActiveOther(null)}
+            initialDisappearingTtl={
+              conversations.find((c) => c.otherUser?.id === activeOther.id)?.disappearingTtl || 0
+            }
+            onBack={closeActive}
             onConvoUpdate={handleConvoUpdate}
             onChatSettingUpdate={handleChatSettingUpdate}
             onUnfriended={(id) => {

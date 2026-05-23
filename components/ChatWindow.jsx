@@ -11,6 +11,7 @@ import { SearchMessagesModal } from './SearchMessagesModal';
 import { MediaGalleryModal } from './MediaGalleryModal';
 import { WallpaperModal, wallpaperStyle } from './WallpaperModal';
 import { FriendProfileModal } from './FriendProfileModal';
+import { DisappearingMessagesModal } from './DisappearingMessagesModal';
 import { ImageLightbox } from './ImageLightbox';
 import { Modal } from './Modal';
 import { ConfettiBurst, isCelebration } from './Confetti';
@@ -31,7 +32,7 @@ import { formatDayDivider, formatLastSeen, sameDay } from '@/utils/date';
 const NEAR_BOTTOM_PX = 120;
 const TOP_FETCH_THRESHOLD_PX = 80;
 
-export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack, onConvoUpdate, onChatSettingUpdate, onUnfriended }) {
+export function ChatWindow({ me, otherUser, conversationId, chatSetting, initialDisappearingTtl = 0, onBack, onConvoUpdate, onChatSettingUpdate, onUnfriended }) {
   const { socket, connected } = useSocket();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +55,9 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   const [mediaOpen, setMediaOpen] = useState(false);
   const [wallpaperOpen, setWallpaperOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [disappearingOpen, setDisappearingOpen] = useState(false);
+  const [disappearingTtl, setDisappearingTtl] = useState(initialDisappearingTtl || 0);
+  const [, forceTick] = useState(0); // pump to re-evaluate expired messages
   const [lightboxImage, setLightboxImage] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0); // increment to trigger
@@ -79,6 +83,8 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     setReplyingTo(null);
     setActionsFor(null);
     setMoreOpen(false);
+    setDisappearingOpen(false);
+    setDisappearingTtl(initialDisappearingTtl || 0);
     setOtherPresence({ isOnline: otherUser.isOnline, lastSeen: otherUser.lastSeen });
     isAtBottomRef.current = true;
     celebratedIdsRef.current = new Set();
@@ -157,6 +163,27 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     document.addEventListener('visibilitychange', tryMark);
     return () => document.removeEventListener('visibilitychange', tryMark);
   }, [socket, conversationId, messages, otherUser.id, onConvoUpdate]);
+
+  // Listen for the other party (or our other devices) changing the
+  // disappearing-messages TTL on this conversation.
+  useEffect(() => {
+    if (!socket) return;
+    function onUpdated({ otherUserId, ttlSeconds }) {
+      if (otherUserId !== otherUser.id) return;
+      setDisappearingTtl(Number(ttlSeconds) || 0);
+    }
+    socket.on('convo:disappearing:updated', onUpdated);
+    return () => socket.off('convo:disappearing:updated', onUpdated);
+  }, [socket, otherUser.id]);
+
+  // Re-render every 30 s so messages whose expiresAt has passed drop out of
+  // the list even before Mongo's TTL reaper has visited the server.
+  useEffect(() => {
+    const hasExpiring = messages.some((m) => m.expiresAt);
+    if (!hasExpiring) return;
+    const i = setInterval(() => forceTick((t) => t + 1), 30 * 1000);
+    return () => clearInterval(i);
+  }, [messages]);
 
   // Socket event wiring lives in a custom hook so this file stays readable.
   useChatSocket({
@@ -437,14 +464,18 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     const out = [];
     let current = null;
     let prevSender = null;
-    messages.forEach((m, i) => {
+    const now = Date.now();
+    const visibleMessages = messages.filter(
+      (m) => !m.expiresAt || new Date(m.expiresAt).getTime() > now
+    );
+    visibleMessages.forEach((m, i) => {
       if (!current || !sameDay(current.date, m.createdAt)) {
         current = { date: m.createdAt, key: `s-${i}-${m.id}`, items: [] };
         out.push(current);
         prevSender = null;
       }
       const tightenTop = prevSender === m.sender;
-      const next = messages[i + 1];
+      const next = visibleMessages[i + 1];
       const tightenBottom =
         next && next.sender === m.sender && sameDay(m.createdAt, next.createdAt);
       current.items.push({ message: m, tightenTop, tightenBottom });
@@ -466,6 +497,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   const myReaction = actionsFor ? actionsFor.reactions?.[me.id] : null;
 
   const wp = wallpaperStyle(chatSetting?.wallpaper);
+  const displayName = chatSetting?.nickname || otherUser.name;
 
   return (
     <section className="flex h-full flex-1 flex-col" onDragEnter={onDragEnter} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
@@ -485,9 +517,9 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 -m-1 text-left transition active:scale-[0.98] hover:bg-ink-50 dark:hover:bg-ink-800"
           aria-label="View profile"
         >
-          <UserAvatar name={otherUser.name} color={otherUser.avatarColor} avatarUrl={otherUser.avatarUrl} size={40} online={otherPresence.isOnline} showDot />
+          <UserAvatar name={displayName} color={otherUser.avatarColor} avatarUrl={otherUser.avatarUrl} size={40} online={otherPresence.isOnline} showDot />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-ink-900 dark:text-ink-50">{otherUser.name}</div>
+            <div className="truncate text-sm font-semibold text-ink-900 dark:text-ink-50">{displayName}</div>
             <div className={`text-xs transition-colors ${otherTyping ? 'text-brand-600 dark:text-brand-400' : otherPresence.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-400 dark:text-ink-500'}`}>
               {presenceLabel}
             </div>
@@ -523,6 +555,31 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         </button>
       </div>
 
+      {/* Disappearing-messages active banner */}
+      {disappearingTtl > 0 && (
+        <button
+          type="button"
+          onClick={() => setDisappearingOpen(true)}
+          className="flex w-full items-center justify-center gap-1.5 border-b border-amber-200 bg-amber-50/80 px-3 py-1.5 text-[11px] font-medium text-amber-800 transition active:scale-[0.99] hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+          title="Tap to change"
+        >
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span>
+            Messages disappear after{' '}
+            {disappearingTtl >= 2592000
+              ? '30 days'
+              : disappearingTtl >= 604800
+              ? '7 days'
+              : disappearingTtl >= 86400
+              ? '24 hours'
+              : `${Math.round(disappearingTtl / 60)} minutes`}
+          </span>
+        </button>
+      )}
+
       {/* Messages with optional custom wallpaper */}
       <div
         ref={scrollRef}
@@ -541,7 +598,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
           <MessagesSkeleton />
         ) : !hasMessages ? (
           <ChatStarters
-            otherName={otherUser.name}
+            otherName={displayName}
             disabled={inputDisabled}
             onPick={(text) => handleSend(text)}
           />
@@ -562,7 +619,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
                       message={item.message}
                       isMine={item.message.sender === me.id}
                       myId={me.id}
-                      otherUserName={otherUser.name}
+                      otherUserName={displayName}
                       tightenTop={item.tightenTop}
                       tightenBottom={item.tightenBottom}
                       bubbleRef={(el) => {
@@ -618,7 +675,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
           <div className="mt-0.5 h-full w-1 shrink-0 rounded bg-brand-500 dark:bg-brand-400" />
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">
-              Replying to {replyingTo.sender === me.id ? 'yourself' : otherUser.name}
+              Replying to {replyingTo.sender === me.id ? 'yourself' : displayName}
             </div>
             <div className="truncate text-ink-600 dark:text-ink-300">
               {replyingTo.content ||
@@ -690,13 +747,23 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         onSearch={() => { setMoreOpen(false); setSearchOpen(true); }}
         onMedia={() => { setMoreOpen(false); setMediaOpen(true); }}
         onWallpaper={() => { setMoreOpen(false); setWallpaperOpen(true); }}
+        onDisappearing={() => { setMoreOpen(false); setDisappearingOpen(true); }}
+        disappearingTtl={disappearingTtl}
+      />
+
+      <DisappearingMessagesModal
+        open={disappearingOpen}
+        onClose={() => setDisappearingOpen(false)}
+        otherUser={{ ...otherUser, name: displayName }}
+        socket={socket}
+        currentTtl={disappearingTtl}
       />
 
       <SearchMessagesModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         conversationId={conversationId}
-        otherUserName={otherUser.name}
+        otherUserName={displayName}
         myId={me.id}
         onJump={(id) => scrollToMessage(id)}
       />
@@ -716,7 +783,9 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         user={{ ...otherUser, isOnline: otherPresence.isOnline, lastSeen: otherPresence.lastSeen }}
+        chatSetting={chatSetting}
         onUnfriended={(id) => onUnfriended?.(id)}
+        onChatSettingUpdate={(s) => onChatSettingUpdate?.(s)}
       />
       <ImageLightbox
         open={Boolean(lightboxImage)}

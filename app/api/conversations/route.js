@@ -32,6 +32,7 @@ export async function GET(req) {
           }
         : null,
       unread,
+      disappearingTtl: c.disappearingTtl || 0,
       updatedAt: c.updatedAt,
     };
   });
@@ -84,6 +85,7 @@ export async function POST(req) {
           }
         : null,
       unread: convo.unread?.get?.(userId) || 0,
+      disappearingTtl: convo.disappearingTtl || 0,
       updatedAt: convo.updatedAt,
     },
   });

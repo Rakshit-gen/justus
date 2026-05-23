@@ -2,7 +2,15 @@
 
 import { Modal } from '../Modal';
 
-export function ChatMoreMenu({ open, onClose, onSearch, onMedia, onWallpaper }) {
+export function ChatMoreMenu({
+  open,
+  onClose,
+  onSearch,
+  onMedia,
+  onWallpaper,
+  onDisappearing,
+  disappearingTtl = 0,
+}) {
   return (
     <Modal open={open} onClose={onClose}>
       <div className="space-y-1">
@@ -36,9 +44,30 @@ export function ChatMoreMenu({ open, onClose, onSearch, onMedia, onWallpaper }) 
           }
           onClick={onWallpaper}
         />
+        <MenuItem
+          label={
+            disappearingTtl > 0
+              ? `Disappearing messages · ${ttlLabel(disappearingTtl)}`
+              : 'Disappearing messages'
+          }
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          }
+          onClick={onDisappearing}
+        />
       </div>
     </Modal>
   );
+}
+
+function ttlLabel(t) {
+  if (t >= 2592000) return '30 days';
+  if (t >= 604800) return '7 days';
+  if (t >= 86400) return '24h';
+  return `${Math.round(t / 60)}m`;
 }
 
 function MenuItem({ label, icon, onClick }) {

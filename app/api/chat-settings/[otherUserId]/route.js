@@ -19,6 +19,9 @@ export async function PATCH(req, { params }) {
 
     const update = {};
     if (typeof body.pinned === 'boolean') update.pinned = body.pinned;
+    if (typeof body.nickname === 'string') {
+      update.nickname = body.nickname.trim().slice(0, 40);
+    }
     if (body.wallpaper && typeof body.wallpaper === 'object') {
       const kind = body.wallpaper.kind;
       const value = body.wallpaper.value;
