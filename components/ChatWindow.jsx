@@ -14,6 +14,9 @@ import { FriendProfileModal } from './FriendProfileModal';
 import { ImageLightbox } from './ImageLightbox';
 import { Modal } from './Modal';
 import { ConfettiBurst, isCelebration } from './Confetti';
+import { ChatStarters } from './chat/ChatStarters';
+import { ChatMoreMenu } from './chat/ChatMoreMenu';
+import { MessagesSkeleton } from './chat/MessagesSkeleton';
 import { api } from '@/lib/apiClient';
 import { uploadFile, readImageDimensions } from '@/lib/uploadClient';
 import {
@@ -22,6 +25,7 @@ import {
   upsertCachedMessage,
 } from '@/lib/messageCache';
 import { useSocket } from '@/context/SocketContext';
+import { useChatSocket } from '@/hooks/useChatSocket';
 import { formatDayDivider, formatLastSeen, sameDay } from '@/utils/date';
 
 const NEAR_BOTTOM_PX = 120;
@@ -154,74 +158,18 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
     return () => document.removeEventListener('visibilitychange', tryMark);
   }, [socket, conversationId, messages, otherUser.id, onConvoUpdate]);
 
-  // Socket listeners
-  useEffect(() => {
-    if (!socket) return;
-
-    function onNew(msg) {
-      const involvesThisChat =
-        (msg.sender === otherUser.id && msg.recipient === me.id) ||
-        (msg.sender === me.id && msg.recipient === otherUser.id);
-      if (!involvesThisChat) {
-        onConvoUpdate?.({ otherUserId: msg.sender === me.id ? msg.recipient : msg.sender, newMessage: msg });
-        return;
-      }
-      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-      upsertCachedMessage(msg.conversationId, msg);
-      onConvoUpdate?.({ otherUserId: msg.sender === me.id ? msg.recipient : msg.sender, newMessage: msg });
-      maybeCelebrate(msg);
-    }
-
-    function onUpdated(msg) {
-      const involvesThisChat =
-        (msg.sender === otherUser.id && msg.recipient === me.id) ||
-        (msg.sender === me.id && msg.recipient === otherUser.id);
-      if (!involvesThisChat) return;
-      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, ...msg } : m)));
-      upsertCachedMessage(msg.conversationId, msg);
-    }
-
-    function onDelivered({ messageId, conversationId: cId, deliveredAt }) {
-      if (cId !== conversationId) return;
-      setMessages((prev) => prev.map((m) =>
-        m.id === messageId && m.status === 'sent' ? { ...m, status: 'delivered', deliveredAt } : m
-      ));
-    }
-
-    function onSeen({ conversationId: cId, seenAt }) {
-      if (cId !== conversationId) return;
-      setMessages((prev) => prev.map((m) =>
-        m.sender === me.id && m.status !== 'seen' ? { ...m, status: 'seen', seenAt } : m
-      ));
-    }
-
-    function onTyping({ userId, isTyping }) {
-      if (userId !== otherUser.id) return;
-      setOtherTyping(isTyping);
-    }
-
-    function onPresence({ userId, isOnline, lastSeen }) {
-      if (userId !== otherUser.id) return;
-      setOtherPresence((prev) => ({ isOnline, lastSeen: lastSeen ?? prev.lastSeen }));
-      if (!isOnline) setOtherTyping(false);
-    }
-
-    socket.on('message:new', onNew);
-    socket.on('message:updated', onUpdated);
-    socket.on('message:delivered', onDelivered);
-    socket.on('message:seen', onSeen);
-    socket.on('typing', onTyping);
-    socket.on('presence', onPresence);
-
-    return () => {
-      socket.off('message:new', onNew);
-      socket.off('message:updated', onUpdated);
-      socket.off('message:delivered', onDelivered);
-      socket.off('message:seen', onSeen);
-      socket.off('typing', onTyping);
-      socket.off('presence', onPresence);
-    };
-  }, [socket, otherUser.id, me.id, conversationId, onConvoUpdate]);
+  // Socket event wiring lives in a custom hook so this file stays readable.
+  useChatSocket({
+    socket,
+    me,
+    otherUser,
+    conversationId,
+    setMessages,
+    setOtherTyping,
+    setOtherPresence,
+    onIncomingMessage: maybeCelebrate,
+    onConvoUpdate,
+  });
 
   // After history loads or new messages arrive, scan for celebration triggers.
   useEffect(() => {
@@ -592,10 +540,11 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
         {loading ? (
           <MessagesSkeleton />
         ) : !hasMessages ? (
-          <div className="flex h-full flex-col items-center justify-center text-center text-ink-400 dark:text-ink-500">
-            <div className="mb-2 text-4xl">👋</div>
-            <div className="text-sm">Say hi to {otherUser.name}</div>
-          </div>
+          <ChatStarters
+            otherName={otherUser.name}
+            disabled={inputDisabled}
+            onPick={(text) => handleSend(text)}
+          />
         ) : (
           <div>
             {sections.map((s) => (
@@ -735,7 +684,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
       <ScheduledList open={scheduledOpen} onClose={() => setScheduledOpen(false)} otherUser={otherUser} />
 
       {/* Chat header more menu */}
-      <ChatMore
+      <ChatMoreMenu
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
         onSearch={() => { setMoreOpen(false); setSearchOpen(true); }}
@@ -783,72 +732,4 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, onBack,
   );
 }
 
-function ChatMore({ open, onClose, onSearch, onMedia, onWallpaper }) {
-  return (
-    <ModalHeaderMenu open={open} onClose={onClose}>
-      <MenuItem
-        label="Search messages"
-        icon={
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
-        }
-        onClick={onSearch}
-      />
-      <MenuItem
-        label="Photos & files"
-        icon={
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-          </svg>
-        }
-        onClick={onMedia}
-      />
-      <MenuItem
-        label="Wallpaper"
-        icon={
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19.4 15a1.65 1.65 0 0 1-1.4-1.55v-3.9c0-.85.6-1.55 1.4-1.55h.6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h.6c.8 0 1.4.7 1.4 1.55v3.9C6 14.3 5.4 15 4.6 15H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z" />
-          </svg>
-        }
-        onClick={onWallpaper}
-      />
-    </ModalHeaderMenu>
-  );
-}
-
-// Small action-sheet helper — just an unlabeled Modal.
-function ModalHeaderMenu({ open, onClose, children }) {
-  return (
-    <Modal open={open} onClose={onClose}>
-      <div className="space-y-1">{children}</div>
-    </Modal>
-  );
-}
-
-function MenuItem({ label, icon, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-ink-700 transition active:scale-[0.98] hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800"
-    >
-      <span className="text-ink-500 dark:text-ink-400">{icon}</span>
-      {label}
-    </button>
-  );
-}
-
-function MessagesSkeleton() {
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-start"><div className="h-9 w-40 rounded-2xl skeleton ring-1 ring-ink-200 dark:ring-ink-700" /></div>
-      <div className="flex justify-end"><div className="h-9 w-56 rounded-2xl skeleton opacity-70" /></div>
-      <div className="flex justify-start"><div className="h-9 w-32 rounded-2xl skeleton ring-1 ring-ink-200 dark:ring-ink-700" /></div>
-      <div className="flex justify-end"><div className="h-9 w-44 rounded-2xl skeleton opacity-70" /></div>
-    </div>
-  );
-}
+// (Inline helper components moved to components/chat/* for clarity.)

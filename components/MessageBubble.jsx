@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import clsx from 'clsx';
 import { useLongPress } from '@/hooks/useLongPress';
+import { SmartImage } from './SmartImage';
 import { formatMessageTime } from '@/utils/date';
 
 const DOUBLE_TAP_WINDOW_MS = 350;
@@ -58,17 +59,14 @@ function formatBytes(bytes) {
 
 function AttachmentRender({ att, isMine, onImageClick }) {
   if (att.mimeType?.startsWith('image/')) {
-    const ratio = att.width && att.height ? att.width / att.height : null;
     return (
-      <button
-        type="button"
+      <SmartImage
+        src={att.url}
+        alt={att.name || 'image'}
+        width={att.width}
+        height={att.height}
         onClick={() => onImageClick?.(att)}
-        title={att.name}
-        className="block overflow-hidden rounded-xl transition active:scale-[0.99]"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={att.url} alt={att.name || 'image'} loading="lazy" className="max-h-72 w-auto max-w-full object-cover" style={ratio ? { aspectRatio: ratio } : undefined} />
-      </button>
+      />
     );
   }
   return (

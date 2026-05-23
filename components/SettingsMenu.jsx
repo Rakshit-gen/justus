@@ -5,6 +5,7 @@ import { Modal } from './Modal';
 import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/context/ThemeContext';
 import { notificationPermission, requestNotificationPermission } from '@/lib/notify';
+import { enablePush, disablePush } from '@/lib/pushClient';
 import { api } from '@/lib/apiClient';
 import clsx from 'clsx';
 
@@ -26,11 +27,16 @@ export function SettingsMenu({ open, onClose, me, onMeUpdated, onOpenProfile, on
   async function toggleNotifications(next) {
     if (!next) {
       update({ notificationsOn: false });
+      // Best-effort: also unsubscribe from web push.
+      disablePush().catch(() => {});
       return;
     }
     const result = await requestNotificationPermission();
     if (result === 'granted') {
       update({ notificationsOn: true });
+      // Subscribe this browser to web push so notifications work even
+      // when the tab/browser is closed (requires VAPID keys on server).
+      enablePush().catch(() => {});
     } else {
       update({ notificationsOn: false });
       if (result === 'denied') {

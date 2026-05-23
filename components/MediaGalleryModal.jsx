@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { ImageLightbox } from './ImageLightbox';
+import { SmartImage } from './SmartImage';
 import { api } from '@/lib/apiClient';
 
 export function MediaGalleryModal({ open, onClose, conversationId }) {
@@ -47,16 +48,16 @@ export function MediaGalleryModal({ open, onClose, conversationId }) {
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-400 dark:text-ink-500">Photos</div>
                 <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
                   {images.map((img) => (
-                    <button
+                    <SmartImage
                       key={img.fileId}
-                      type="button"
+                      src={img.url}
+                      alt={img.name || ''}
+                      width={1}
+                      height={1}
+                      maxHeight={200}
+                      className="aspect-square"
                       onClick={() => setLightboxImage(img)}
-                      title={img.name}
-                      className="aspect-square overflow-hidden rounded-lg bg-ink-100 transition active:scale-95 dark:bg-ink-800"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt={img.name || ''} className="h-full w-full object-cover" loading="lazy" />
-                    </button>
+                    />
                   ))}
                 </div>
               </section>
