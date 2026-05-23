@@ -58,6 +58,8 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
   const [disappearingOpen, setDisappearingOpen] = useState(false);
   const [disappearingTtl, setDisappearingTtl] = useState(initialDisappearingTtl || 0);
   const [, forceTick] = useState(0); // pump to re-evaluate expired messages
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  const [unreadWhileScrolled, setUnreadWhileScrolled] = useState(0);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0); // increment to trigger
@@ -85,6 +87,8 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
     setMoreOpen(false);
     setDisappearingOpen(false);
     setDisappearingTtl(initialDisappearingTtl || 0);
+    setShowJumpToBottom(false);
+    setUnreadWhileScrolled(0);
     setOtherPresence({ isOnline: otherUser.isOnline, lastSeen: otherUser.lastSeen });
     isAtBottomRef.current = true;
     celebratedIdsRef.current = new Set();
@@ -194,7 +198,14 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
     setMessages,
     setOtherTyping,
     setOtherPresence,
-    onIncomingMessage: maybeCelebrate,
+    onIncomingMessage: (msg) => {
+      maybeCelebrate(msg);
+      // Bump the jump-to-bottom badge only for messages from the other side
+      // that arrived while we were scrolled away from the bottom.
+      if (msg.sender !== me.id && !isAtBottomRef.current) {
+        setUnreadWhileScrolled((n) => n + 1);
+      }
+    },
     onConvoUpdate,
   });
 
@@ -254,8 +265,18 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
   function handleScroll(e) {
     const el = e.currentTarget;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isAtBottomRef.current = distFromBottom < NEAR_BOTTOM_PX;
+    const atBottom = distFromBottom < NEAR_BOTTOM_PX;
+    isAtBottomRef.current = atBottom;
+    setShowJumpToBottom(!atBottom);
+    if (atBottom) setUnreadWhileScrolled(0);
     if (el.scrollTop < TOP_FETCH_THRESHOLD_PX && hasMore && !loadingMore) loadOlder();
+  }
+
+  function jumpToBottom() {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    setUnreadWhileScrolled(0);
   }
 
   // Files
@@ -632,6 +653,7 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
                       onDoubleTap={(m, pos) => handleDoubleTap(m, pos)}
                       onQuoteClick={(id) => scrollToMessage(id)}
                       onImageClick={(att) => setLightboxImage(att)}
+                      onSwipeReply={(m) => startReply(m)}
                     />
                   </div>
                 ))}
@@ -654,6 +676,24 @@ export function ChatWindow({ me, otherUser, conversationId, chatSetting, initial
             ❤️
           </span>
         ))}
+
+        {showJumpToBottom && (
+          <div className="pointer-events-none sticky bottom-2 z-20 flex justify-end">
+            <button
+              type="button"
+              onClick={jumpToBottom}
+              className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white/95 py-1.5 pl-2 pr-3 text-xs font-medium text-ink-700 shadow-soft-lg ring-1 ring-ink-200 backdrop-blur transition active:scale-95 hover:bg-white dark:bg-ink-800/95 dark:text-ink-100 dark:ring-ink-700 dark:hover:bg-ink-800 animate-spring-in"
+              aria-label="Scroll to latest"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+              <span>
+                {unreadWhileScrolled > 0 ? `${unreadWhileScrolled} new` : 'Jump to latest'}
+              </span>
+            </button>
+          </div>
+        )}
 
         {dragOver && (
           <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50/80 text-brand-700 backdrop-blur-sm dark:border-brand-400/70 dark:bg-brand-500/15 dark:text-brand-200">

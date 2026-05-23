@@ -1,12 +1,15 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useLongPress } from '@/hooks/useLongPress';
 import { SmartImage } from './SmartImage';
 import { formatMessageTime } from '@/utils/date';
 
 const DOUBLE_TAP_WINDOW_MS = 350;
+const SWIPE_TRIGGER_PX = 60;     // horizontal travel that fires "reply"
+const SWIPE_MAX_PX = 80;         // beyond this we rubber-band
+const AXIS_LOCK_PX = 8;          // px before we decide horizontal vs vertical
 
 function Ticks({ status }) {
   if (status === 'seen') {
@@ -166,11 +169,16 @@ export function MessageBubble({
   onDoubleTap,
   onQuoteClick,
   onImageClick,
+  onSwipeReply,
   bubbleRef,
   highlight,
 }) {
   const longPressFiredRef = useRef(false);
   const lastTapAtRef = useRef(0);
+  const swipeRef = useRef({ active: false, startX: 0, startY: 0, axis: null });
+  const swipeFiredRef = useRef(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const isDeleted = Boolean(message.deletedAt);
 
   const longPress = useLongPress(
     (e, pos) => {
@@ -185,6 +193,11 @@ export function MessageBubble({
       longPressFiredRef.current = false;
       return;
     }
+    if (swipeFiredRef.current) {
+      // Suppress the click that follows a swipe-to-reply gesture.
+      swipeFiredRef.current = false;
+      return;
+    }
     const now = Date.now();
     if (lastTapAtRef.current && now - lastTapAtRef.current < DOUBLE_TAP_WINDOW_MS) {
       lastTapAtRef.current = 0;
@@ -195,19 +208,94 @@ export function MessageBubble({
     }
   }
 
-  const isDeleted = Boolean(message.deletedAt);
+  // Pointer-based swipe-to-reply. Sent messages (right-aligned) swipe LEFT,
+  // received messages swipe RIGHT — same direction as the bubble's "free"
+  // edge in both cases. Threshold + rubber-band match the iMessage feel.
+  const swipeDirection = isMine ? -1 : 1;
+
+  function onPointerDown(e) {
+    if (isDeleted || !onSwipeReply) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    swipeRef.current = { active: true, startX: e.clientX, startY: e.clientY, axis: null };
+  }
+
+  function onPointerMove(e) {
+    const s = swipeRef.current;
+    if (!s.active) return;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
+    if (!s.axis) {
+      if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+      s.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (s.axis !== 'x') return; // vertical → let the scroller take over
+    // Only allow swipe in the direction matching this bubble's side.
+    const allowed = swipeDirection > 0 ? Math.max(0, dx) : Math.min(0, dx);
+    const abs = Math.abs(allowed);
+    const capped = abs > SWIPE_MAX_PX ? SWIPE_MAX_PX + (abs - SWIPE_MAX_PX) * 0.2 : abs;
+    setSwipeOffset(swipeDirection * capped);
+  }
+
+  function onPointerEnd() {
+    const s = swipeRef.current;
+    if (!s.active) return;
+    s.active = false;
+    if (Math.abs(swipeOffset) >= SWIPE_TRIGGER_PX) {
+      swipeFiredRef.current = true;
+      try { navigator.vibrate?.(12); } catch {}
+      onSwipeReply?.(message);
+    }
+    setSwipeOffset(0);
+  }
+
   const isEdited = Boolean(message.editedAt) && !isDeleted;
 
   const mineCorners = clsx('rounded-2xl', tightenTop && 'rounded-tr-md', !tightenBottom && 'rounded-br-md');
   const theirCorners = clsx('rounded-2xl', tightenTop && 'rounded-tl-md', !tightenBottom && 'rounded-bl-md');
 
+  const swipeProgress = Math.min(1, Math.abs(swipeOffset) / SWIPE_TRIGGER_PX);
+  const swipeArmed = Math.abs(swipeOffset) >= SWIPE_TRIGGER_PX;
+  const isSwiping = swipeOffset !== 0;
+
   return (
-    <div ref={bubbleRef} className={clsx('flex w-full animate-bubble-in', isMine ? 'justify-end' : 'justify-start')}>
+    <div
+      ref={bubbleRef}
+      className={clsx(
+        'relative flex w-full animate-bubble-in',
+        isMine ? 'justify-end' : 'justify-start'
+      )}
+    >
+      {/* Reply icon revealed as the bubble is dragged. Sits on the bubble's
+          original side (opposite to the drag direction). */}
+      {isSwiping && (
+        <span
+          aria-hidden
+          className={clsx(
+            'pointer-events-none absolute top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+            isMine ? 'right-2' : 'left-2',
+            swipeArmed
+              ? 'bg-brand-500 text-white shadow-brand-glow'
+              : 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400'
+          )}
+          style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.7 + 0.3 * swipeProgress})` }}
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 17 4 12 9 7" />
+            <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+          </svg>
+        </span>
+      )}
       <div
         className={clsx(
           'max-w-[82%] transition-shadow sm:max-w-[65%]',
+          !isSwiping && 'transition-transform duration-200',
           highlight && 'ring-2 ring-brand-400 rounded-2xl'
         )}
+        style={{ transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined, touchAction: 'pan-y' }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
       >
         <div
           {...(isDeleted ? {} : longPress)}
