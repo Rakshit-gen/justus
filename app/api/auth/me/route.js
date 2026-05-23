@@ -6,21 +6,33 @@ const { requireUserId } = require('@/lib/auth');
 
 export const dynamic = 'force-dynamic';
 
-async function emitProfileUpdateToFriends(userId, payload) {
+// Broadcasts a user:update event. Sends the privacy-masked view to friends,
+// and the FULL `selfPayload` (including private fields) to the user's own
+// other sessions — multi-device sync.
+async function emitProfileUpdate(userId, publicViewPayload, selfPayload) {
   try {
+    const onlineUsers = global.__chatmeOnlineUsers;
+    const io = global.__chatmeIO;
+    if (!onlineUsers || !io) return;
+
+    // Push to friends (privacy-masked view).
     const friendships = await Friendship.find({
       status: 'accepted',
       $or: [{ requester: userId }, { recipient: userId }],
     });
-    const onlineUsers = global.__chatmeOnlineUsers;
-    const io = global.__chatmeIO;
-    if (!onlineUsers || !io) return;
     for (const f of friendships) {
       const friendId =
         f.requester.toString() === String(userId) ? f.recipient : f.requester;
       const set = onlineUsers.get(String(friendId));
       if (!set) continue;
-      for (const sid of set) io.to(sid).emit('user:update', payload);
+      for (const sid of set) io.to(sid).emit('user:update', publicViewPayload);
+    }
+
+    // Push to my own other sessions (full payload so privacy fields don't
+    // get clobbered on other devices).
+    const ownSockets = onlineUsers.get(String(userId));
+    if (ownSockets) {
+      for (const sid of ownSockets) io.to(sid).emit('user:update', selfPayload);
     }
   } catch (err) {
     console.warn('[emit user:update]', err);
@@ -72,8 +84,8 @@ export async function PATCH(req) {
     }
 
     await user.save();
-    // Broadcast privacy-masked view to friends (they don't see private fields).
-    await emitProfileUpdateToFriends(userId, user.toPublicView());
+    // Friends get the privacy-masked view; my own other sessions get the full one.
+    await emitProfileUpdate(userId, user.toPublicView(), user.toPublic());
     return NextResponse.json({ user: user.toPublic() });
   } catch (err) {
     console.error('[me PATCH]', err);

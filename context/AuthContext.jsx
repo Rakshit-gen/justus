@@ -15,13 +15,33 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    let initial = null;
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (parsed?.token && parsed?.user) setAuth(parsed);
+        if (parsed?.token && parsed?.user) {
+          initial = parsed;
+          setAuth(parsed);
+        }
       } catch {}
     }
     setLoading(false);
+
+    // Refetch the current user in the background — catches profile changes
+    // made on another device while this one was closed.
+    if (initial?.token) {
+      api('/api/auth/me')
+        .then((data) => {
+          if (!data?.user) return;
+          setAuth((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, user: { ...prev.user, ...data.user } };
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+            return next;
+          });
+        })
+        .catch(() => { /* ignore — stale state is acceptable */ });
+    }
   }, []);
 
   const persist = useCallback((next) => {

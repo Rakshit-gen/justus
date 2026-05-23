@@ -7,21 +7,28 @@ const { uploadBuffer, deleteFile } = require('@/lib/gridfs');
 
 export const dynamic = 'force-dynamic';
 
-async function emitProfileUpdateToFriends(userId, payload) {
+// Friends get the privacy-masked view; my own other sessions get the full one.
+async function emitProfileUpdate(userId, publicViewPayload, selfPayload) {
   try {
+    const onlineUsers = global.__chatmeOnlineUsers;
+    const io = global.__chatmeIO;
+    if (!onlineUsers || !io) return;
+
     const friendships = await Friendship.find({
       status: 'accepted',
       $or: [{ requester: userId }, { recipient: userId }],
     });
-    const onlineUsers = global.__chatmeOnlineUsers;
-    const io = global.__chatmeIO;
-    if (!onlineUsers || !io) return;
     for (const f of friendships) {
       const friendId =
         f.requester.toString() === String(userId) ? f.recipient : f.requester;
       const set = onlineUsers.get(String(friendId));
       if (!set) continue;
-      for (const sid of set) io.to(sid).emit('user:update', payload);
+      for (const sid of set) io.to(sid).emit('user:update', publicViewPayload);
+    }
+
+    const ownSockets = onlineUsers.get(String(userId));
+    if (ownSockets) {
+      for (const sid of ownSockets) io.to(sid).emit('user:update', selfPayload);
     }
   } catch (err) {
     console.warn('[emit user:update]', err);
@@ -66,7 +73,7 @@ export async function POST(req) {
       try { await deleteFile(oldFileId); } catch (e) { /* best-effort */ }
     }
 
-    await emitProfileUpdateToFriends(userId, user.toPublicView());
+    await emitProfileUpdate(userId, user.toPublicView(), user.toPublic());
 
     return NextResponse.json({ user: user.toPublic() });
   } catch (err) {
@@ -88,7 +95,7 @@ export async function DELETE(req) {
     if (oldFileId) {
       try { await deleteFile(oldFileId); } catch {}
     }
-    await emitProfileUpdateToFriends(userId, user.toPublicView());
+    await emitProfileUpdate(userId, user.toPublicView(), user.toPublic());
     return NextResponse.json({ user: user.toPublic() });
   } catch (err) {
     console.error('[avatar delete]', err);
