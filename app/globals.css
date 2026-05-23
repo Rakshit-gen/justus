@@ -15,6 +15,11 @@
 html, body {
   height: 100%;
   height: 100dvh;
+  /* JS-driven height tied to window.visualViewport so the layout shrinks
+     when the mobile keyboard opens (Android Chrome doesn't always do this
+     with dvh alone) and so content never sits behind the system nav bar
+     when the page extends edge-to-edge (`viewportFit: 'cover'`). */
+  height: var(--app-height, 100dvh);
 }
 
 html {
@@ -78,7 +83,10 @@ input, textarea, select, button {
   -webkit-touch-callout: none;
 }
 
-.pb-safe { padding-bottom: max(0.75rem, var(--safe-bottom)); }
+/* On Android PWA standalone with 3-button nav and no env() inset reported,
+   we still need breathing room above the system buttons — hence the 1rem
+   minimum (was 0.75rem). */
+.pb-safe { padding-bottom: max(1rem, calc(var(--safe-bottom) + 0.5rem)); }
 .pt-safe { padding-top: max(0.75rem, var(--safe-top)); }
 
 @keyframes confetti-fall {

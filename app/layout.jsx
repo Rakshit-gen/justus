@@ -52,6 +52,26 @@ if ('serviceWorker' in navigator) {
 }
 `;
 
+// Tracks the visual viewport height in --app-height. The visualViewport
+// API reports the area NOT covered by the on-screen keyboard or system
+// nav bars, which Android Chrome's `dvh` unit doesn't reliably do. We
+// fall back to innerHeight for browsers without visualViewport support.
+const appHeightInitScript = `
+(function () {
+  function set() {
+    var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  set();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', set);
+    window.visualViewport.addEventListener('scroll', set);
+  }
+  window.addEventListener('resize', set);
+  window.addEventListener('orientationchange', set);
+})();
+`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
@@ -60,6 +80,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icon-192.svg" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: appHeightInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: swInitScript }} />
       </head>
       <body className="h-full font-sans">
