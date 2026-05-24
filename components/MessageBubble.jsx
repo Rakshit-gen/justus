@@ -216,17 +216,30 @@ export function MessageBubble({
   function onPointerDown(e) {
     if (isDeleted || !onSwipeReply) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    swipeRef.current = { active: true, startX: e.clientX, startY: e.clientY, axis: null };
+    swipeRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      axis: null,
+      pointerId: e.pointerId,
+      captured: false,
+      target: e.currentTarget,
+    };
   }
 
   function onPointerMove(e) {
     const s = swipeRef.current;
-    if (!s.active) return;
+    if (!s.active || e.pointerId !== s.pointerId) return;
     const dx = e.clientX - s.startX;
     const dy = e.clientY - s.startY;
     if (!s.axis) {
       if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
       s.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      // Capture once we've decided this is a horizontal swipe so the bubble
+      // keeps receiving move/up events even as it slides under the finger.
+      if (s.axis === 'x' && !s.captured) {
+        try { s.target.setPointerCapture?.(s.pointerId); s.captured = true; } catch {}
+      }
     }
     if (s.axis !== 'x') return; // vertical → let the scroller take over
     // Only allow swipe in the direction matching this bubble's side.
@@ -236,10 +249,14 @@ export function MessageBubble({
     setSwipeOffset(swipeDirection * capped);
   }
 
-  function onPointerEnd() {
+  function onPointerEnd(e) {
     const s = swipeRef.current;
     if (!s.active) return;
+    if (e?.pointerId != null && e.pointerId !== s.pointerId) return;
     s.active = false;
+    if (s.captured) {
+      try { s.target?.releasePointerCapture?.(s.pointerId); } catch {}
+    }
     if (Math.abs(swipeOffset) >= SWIPE_TRIGGER_PX) {
       swipeFiredRef.current = true;
       try { navigator.vibrate?.(12); } catch {}
